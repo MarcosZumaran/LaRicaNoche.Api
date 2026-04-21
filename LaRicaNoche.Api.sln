@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LaRicaNoche.Api", "LaRicaNoche.Api.csproj", "{9A4BB45E-CF37-6331-7120-BC9F8DFF8E54}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9A4BB45E-CF37-6331-7120-BC9F8DFF8E54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A4BB45E-CF37-6331-7120-BC9F8DFF8E54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A4BB45E-CF37-6331-7120-BC9F8DFF8E54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A4BB45E-CF37-6331-7120-BC9F8DFF8E54}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FCC7A19C-1D69-4B21-92D5-8E3F7B37747D}
+	EndGlobalSection
+EndGlobal
