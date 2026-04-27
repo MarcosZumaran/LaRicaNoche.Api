@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LaRicaNoche.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8510250e85e6a4595bdc437e5a2ca351cf956151")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6897d459ed4868b16fe158440beb2724dcc98aa5")]
 [assembly: System.Reflection.AssemblyProductAttribute("LaRicaNoche.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LaRicaNoche.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
