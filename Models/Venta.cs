@@ -1,33 +1,27 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LaRicaNoche.Api.Models;
 
-[Table("ventas")]
-public class Venta
+public partial class Venta
 {
-    [Key]
-    [Column("id_venta")]
     public int IdVenta { get; set; }
 
-    [Column("id_cliente")]
     public int? IdCliente { get; set; }
 
-    [Column("id_usuario")]
-    public int IdUsuario { get; set; }
+    public int? IdUsuario { get; set; }
 
-    [Column("fecha_venta")]
-    public DateTime FechaVenta { get; set; } = DateTime.Now;
+    public DateTime? FechaVenta { get; set; }
 
-    [Column("total_venta")]
-    public decimal TotalVenta { get; set; }
+    public decimal Total { get; set; }
 
-    [MaxLength(20)]
-    [Column("metodo_pago")]
     public string? MetodoPago { get; set; }
 
-    [ForeignKey("IdCliente")]
-    public Cliente? Cliente { get; set; }
+    public virtual Cliente? IdClienteNavigation { get; set; }
 
-    public List<ItemVenta> ItemsVenta { get; set; } = new();
+    public virtual Usuario? IdUsuarioNavigation { get; set; }
+
+    public virtual ICollection<ItemsVentum> ItemsVenta { get; set; } = new List<ItemsVentum>();
+
+    public virtual CatMetodoPago? MetodoPagoNavigation { get; set; }
 }

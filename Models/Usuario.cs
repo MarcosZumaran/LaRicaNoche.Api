@@ -1,29 +1,29 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LaRicaNoche.Api.Models;
 
-[Table("usuarios")]
-public class Usuario
+public partial class Usuario
 {
-    [Key]
-    [Column("id_usuario")]
     public int IdUsuario { get; set; }
 
-    [Required, MaxLength(50)]
-    [Column("username")]
-    public string Username { get; set; } = string.Empty;
+    public string Username { get; set; } = null!;
 
-    [Column("password_hash")]
-    public string PasswordHash { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = null!;
 
-    [MaxLength(20)]
-    [Column("rol")]
-    public string? Rol { get; set; }
+    public int? IdRol { get; set; }
 
-    [Column("fecha_creacion")]
     public DateTime? FechaCreacion { get; set; }
 
-    [Column("esta_activo")]
-    public bool EstaActivo { get; set; } = true;
+    public bool? EstaActivo { get; set; }
+
+    public virtual ICollection<Habitacione> Habitaciones { get; set; } = new List<Habitacione>();
+
+    public virtual ICollection<HistorialEstadoHabitacion> HistorialEstadoHabitacions { get; set; } = new List<HistorialEstadoHabitacion>();
+
+    public virtual CatRolUsuario? IdRolNavigation { get; set; }
+
+    public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
+
+    public virtual ICollection<Venta> Venta { get; set; } = new List<Venta>();
 }

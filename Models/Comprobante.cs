@@ -1,52 +1,45 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LaRicaNoche.Api.Models;
 
-[Table("comprobantes")]
-public class Comprobante
+public partial class Comprobante
 {
-    [Key]
-    [Column("id_comprobante")]
     public int IdComprobante { get; set; }
 
-    [Column("id_referencia")]
-    public int IdReferencia { get; set; }
+    public int? IdEstancia { get; set; }
 
-    [MaxLength(20)]
-    [Column("tipo_referencia")]
-    public string? TipoReferencia { get; set; }
+    public int? IdVenta { get; set; }
 
-    [MaxLength(20)]
-    [Column("tipo_comprobante")]
     public string? TipoComprobante { get; set; }
 
-    [MaxLength(4)]
-    [Column("serie")]
-    public string? Serie { get; set; }
+    public string Serie { get; set; } = null!;
 
-    [Column("correlativo")]
     public int Correlativo { get; set; }
 
-    [Column("fecha_emision")]
     public DateTime? FechaEmision { get; set; }
 
-    [Column("monto_total")]
     public decimal MontoTotal { get; set; }
 
-    [MaxLength(20)]
-    [Column("cliente_documento")]
-    public string? ClienteDocumento { get; set; }
+    public decimal IgvMonto { get; set; }
 
-    [MaxLength(100)]
-    [Column("cliente_nombres")]
-    public string? ClienteNombres { get; set; }
+    public string? ClienteDocumentoTipo { get; set; }
 
-    [MaxLength(20)]
-    [Column("metodo_pago")]
+    public string? ClienteDocumentoNum { get; set; }
+
+    public string? ClienteNombre { get; set; }
+
     public string? MetodoPago { get; set; }
 
-    [MaxLength(20)]
-    [Column("estado_sunat")]
     public string? EstadoSunat { get; set; }
+
+    public string? XmlFirmado { get; set; }
+
+    public byte[]? CdrZip { get; set; }
+
+    public virtual CatTipoDocumento? ClienteDocumentoTipoNavigation { get; set; }
+
+    public virtual CatMetodoPago? MetodoPagoNavigation { get; set; }
+
+    public virtual CatTipoComprobante? TipoComprobanteNavigation { get; set; }
 }

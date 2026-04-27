@@ -1,50 +1,39 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LaRicaNoche.Api.Models;
 
-[Table("clientes")]
-public class Cliente
+public partial class Cliente
 {
-    [Key]
-    [Column("id_cliente")]
     public int IdCliente { get; set; }
 
-    [MaxLength(20)]
-    [Column("tipo_documento")]
-    public string? TipoDocumento { get; set; }
+    public string TipoDocumento { get; set; } = null!;
 
-    [MaxLength(20)]
-    [Column("documento")]
-    public string? Documento { get; set; }
+    public string Documento { get; set; } = null!;
 
-    [MaxLength(100)]
-    [Column("nombres")]
-    public string? Nombres { get; set; }
+    public string Nombres { get; set; } = null!;
 
-    [MaxLength(100)]
-    [Column("apellidos")]
-    public string? Apellidos { get; set; }
+    public string Apellidos { get; set; } = null!;
 
-    [MaxLength(50)]
-    [Column("nacionalidad")]
     public string? Nacionalidad { get; set; }
 
-    [Column("fecha_nacimiento")]
-    public DateTime? FechaNacimiento { get; set; }
+    public DateOnly? FechaNacimiento { get; set; }
 
-    [MaxLength(15)]
-    [Column("telefono")]
     public string? Telefono { get; set; }
 
-    [MaxLength(100)]
-    [Column("email")]
     public string? Email { get; set; }
 
-    [MaxLength(200)]
-    [Column("direccion")]
     public string? Direccion { get; set; }
 
-    [Column("fecha_registro")]
     public DateTime? FechaRegistro { get; set; }
+
+    public virtual ICollection<Estancia> Estancia { get; set; } = new List<Estancia>();
+
+    public virtual ICollection<Huespede> Huespedes { get; set; } = new List<Huespede>();
+
+    public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
+
+    public virtual CatTipoDocumento TipoDocumentoNavigation { get; set; } = null!;
+
+    public virtual ICollection<Venta> Venta { get; set; } = new List<Venta>();
 }

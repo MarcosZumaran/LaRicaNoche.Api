@@ -44,15 +44,7 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "dependencies": {
-            "BCrypt.Net-Next": {
-              "target": "Package",
-              "version": "[4.1.0, )"
-            },
             "Mapster": {
-              "target": "Package",
-              "version": "[10.0.7, )"
-            },
-            "Mapster.DependencyInjection": {
               "target": "Package",
               "version": "[10.0.7, )"
             },
@@ -64,17 +56,11 @@
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.6, )"
+              "version": "[10.0.7, )"
             },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
-              "version": "[10.0.6, )"
-            },
-            "Microsoft.EntityFrameworkCore.Tools": {
-              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[10.0.6, )"
+              "version": "[10.0.7, )"
             },
             "NLua": {
               "target": "Package",
@@ -82,7 +68,7 @@
             },
             "Scalar.AspNetCore": {
               "target": "Package",
-              "version": "[2.14.1, )"
+              "version": "[2.14.4, )"
             }
           },
           "imports": [

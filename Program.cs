@@ -1,34 +1,41 @@
-using LaRicaNoche.Api.Extensions;
-using LaRicaNoche.Api.Config;
-using LaRicaNoche.Api.Middleware;
-using Scalar.AspNetCore;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// --- CONFIGURACIÓN DE SERVICIOS (Base de Datos, Servicios, etc) ---
-builder.Services.AddApplicationServices(builder.Configuration);
-
-// Activa el mapeo automático de Mapster que creamos
-MappingConfig.Configure();
-
-builder.Services.AddControllers();
+// Add services to the container.
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// --- ACTIVACIÓN DEL MIDDLEWARE (ESCUDO DE ERRORES) ---
-// Debe ir al inicio para atrapar cualquier error en la API
-app.UseMiddleware<ExceptionMiddleware>();
-
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
 
-// Mapeo de rutas de controladores para que Scalar las vea
-app.MapControllers();
+var summaries = new[]
+{
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+};
+
+app.MapGet("/weatherforecast", () =>
+{
+    var forecast =  Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast
+        (
+            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Random.Shared.Next(-20, 55),
+            summaries[Random.Shared.Next(summaries.Length)]
+        ))
+        .ToArray();
+    return forecast;
+})
+.WithName("GetWeatherForecast");
 
 app.Run();
+
+record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+{
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+}

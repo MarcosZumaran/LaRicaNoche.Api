@@ -8,12 +8,10 @@
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/LaRicaNoche.Api.pdb
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Azure.Core.dll
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Azure.Identity.dll
-/home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/BCrypt.Net-Next.dll
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Humanizer.dll
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/KeraLua.dll
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Mapster.dll
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Mapster.Core.dll
-/home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Mapster.DependencyInjection.dll
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Microsoft.AspNetCore.OpenApi.dll
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Microsoft.Bcl.AsyncInterfaces.dll
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/bin/Debug/net10.0/Microsoft.Bcl.Cryptography.dll
@@ -174,6 +172,7 @@
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/obj/Debug/net10.0/LaRicaNoche.Api.csproj.CoreCompileInputs.cache
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/obj/Debug/net10.0/LaRicaNoche.Api.MvcApplicationPartsAssemblyInfo.cs
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/obj/Debug/net10.0/LaRicaNoche.Api.MvcApplicationPartsAssemblyInfo.cache
+/home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/obj/Debug/net10.0/LaRicaNoche.Api.sourcelink.json
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/obj/Debug/net10.0/rjimswa.dswa.cache.json
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/obj/Debug/net10.0/rjsmrazor.dswa.cache.json
 /home/alalsocram2007/Documentos/ProyectosVSCODE/c gato/LaRicaNoche.Api/obj/Debug/net10.0/rjsmcshtml.dswa.cache.json

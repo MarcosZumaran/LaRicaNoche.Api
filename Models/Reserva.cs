@@ -1,51 +1,35 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LaRicaNoche.Api.Models;
 
-[Table("reservas")]
-public class Reserva
+public partial class Reserva
 {
-    [Key]
-    [Column("id_reserva")]
     public int IdReserva { get; set; }
 
-    [Column("id_cliente")]
-    public int IdCliente { get; set; }
+    public int? IdCliente { get; set; }
 
-    [Column("id_habitacion")]
-    public int IdHabitacion { get; set; }
+    public int? IdHabitacion { get; set; }
 
-    [Column("id_usuario_recepcion")]
-    public int IdUsuarioRecepcion { get; set; }
+    public int? IdUsuario { get; set; }
 
-    [Column("fecha_registro")]
-    public DateTime FechaRegistro { get; set; } = DateTime.Now;
+    public DateTime? FechaRegistro { get; set; }
 
-    [Column("fecha_entrada")]
-    public DateTime FechaEntrada { get; set; }
+    public DateTime FechaEntradaPrevista { get; set; }
 
-    [Column("fecha_salida")]
-    public DateTime FechaSalida { get; set; }
+    public DateTime FechaSalidaPrevista { get; set; }
 
-    [Column("monto_total")]
     public decimal MontoTotal { get; set; }
 
-    [MaxLength(20)]
-    [Column("metodo_pago")]
-    public string? MetodoPago { get; set; }
+    public string? Estado { get; set; }
 
-    [MaxLength(20)]
-    [Column("estado_reserva")]
-    public string? EstadoReserva { get; set; }
+    public string? Observaciones { get; set; }
 
-    [MaxLength(20)]
-    [Column("num_boleta")]
-    public string? NumBoleta { get; set; }
+    public virtual ICollection<Estancia> Estancia { get; set; } = new List<Estancia>();
 
-    [ForeignKey("IdCliente")]
-    public Cliente? Cliente { get; set; }
+    public virtual Cliente? IdClienteNavigation { get; set; }
 
-    [ForeignKey("IdHabitacion")]
-    public Habitacion? Habitacion { get; set; }
+    public virtual Habitacione? IdHabitacionNavigation { get; set; }
+
+    public virtual Usuario? IdUsuarioNavigation { get; set; }
 }

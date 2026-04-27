@@ -1,35 +1,31 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
 namespace LaRicaNoche.Api.Models;
 
-[Table("productos")]
-public class Producto
+public partial class Producto
 {
-    [Key]
-    [Column("id_producto")]
     public int IdProducto { get; set; }
 
-    [Column("id_categoria")]
-    public int IdCategoria { get; set; }
+    public string? CodigoSunat { get; set; }
 
-    [Required, MaxLength(100)]
-    [Column("nombre")]
-    public string Nombre { get; set; } = string.Empty;
+    public string Nombre { get; set; } = null!;
 
-    [Column("precio_venta")]
-    public decimal PrecioVenta { get; set; }
+    public string? Descripcion { get; set; }
 
-    [Column("stock")]
-    public int Stock { get; set; }
+    public decimal PrecioUnitario { get; set; }
 
-    [Column("stock_minimo")]
-    public int StockMinimo { get; set; } = 5;
+    public string? IdAfectacionIgv { get; set; }
 
-    [MaxLength(3)]
-    [Column("unidad_medida")]
+    public int? Stock { get; set; }
+
+    public int? StockMinimo { get; set; }
+
     public string? UnidadMedida { get; set; }
 
-    [ForeignKey("IdCategoria")]
-    public Categoria? Categoria { get; set; }
+    public DateTime? CreatedAt { get; set; }
+
+    public virtual CatAfectacionIgv? IdAfectacionIgvNavigation { get; set; }
+
+    public virtual ICollection<ItemsVentum> ItemsVenta { get; set; } = new List<ItemsVentum>();
 }
