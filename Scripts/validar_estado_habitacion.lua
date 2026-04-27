@@ -1,0 +1,21 @@
+-- Recibira el nombre del estado actual y del estado nuevo
+-- Retornara true si la trancicion es valido y false si no lo es 
+
+local transiciones = {
+    ["Disponible"] = {"Ocupada", "Mantenimiento"},
+    ["Ocupada"] = {"Limpieza"},
+    ["Limpieza"] = {"Disponible", "Mantenimiento"},
+    ["Mantenimiento"] = {"Disponible", "Limpieza"}
+};
+
+function validar_trancision(estado_actual, estado_nuevo)
+    if transiciones[estado_actual] == nil then
+        return false;
+    end
+    for _, destino in ipairs(transiciones[estado_actual]) do
+        if destino == estado_nuevo then
+            return true;
+        end
+    end
+    return false;
+end

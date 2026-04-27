@@ -15,6 +15,7 @@ builder.Services.AddSingleton<ILuaService, LuaService>();
 
 // Controladores de la API
 builder.Services.AddScoped<ITipoHabitacionService, TipoHabitacionService>();
+builder.Services.AddScoped<IHabitacionService, HabitacionService>();
 
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
