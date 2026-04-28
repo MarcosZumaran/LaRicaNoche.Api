@@ -15,9 +15,11 @@ builder.Services.AddSingleton<ILuaService, LuaService>();
 
 // Mappers
 builder.Services.AddSingleton<CatEstadoHabitacionMapper>();
+builder.Services.AddSingleton<CatRolUsuarioMapper>();
 
 // Servicios
 builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
+builder.Services.AddScoped<ICatRolUsuarioService, CatRolUsuarioService>();
 
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
