@@ -19,6 +19,7 @@ builder.Services.AddSingleton<CatRolUsuarioMapper>();
 builder.Services.AddSingleton<CatMetodoPagoMapper>();
 builder.Services.AddSingleton<CatTipoDocumentoMapper>();
 builder.Services.AddSingleton<CatTipoComprobanteMapper>();
+builder.Services.AddSingleton<CatAfectacionIgvMapper>();
 
 // Servicios
 builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
@@ -26,7 +27,7 @@ builder.Services.AddScoped<ICatRolUsuarioService, CatRolUsuarioService>();
 builder.Services.AddScoped<ICatMetodoPagoService, CatMetodoPagoService>();
 builder.Services.AddScoped<ICatTipoDocumentoService, CatTipoDocumentoService>();
 builder.Services.AddScoped<ICatTipoComprobanteService, CatTipoComprobanteService>();
-
+builder.Services.AddScoped<ICatAfectacionIgvService, CatAfectacionIgvService>();
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
