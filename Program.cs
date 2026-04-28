@@ -21,6 +21,7 @@ builder.Services.AddSingleton<CatTipoDocumentoMapper>();
 builder.Services.AddSingleton<CatTipoComprobanteMapper>();
 builder.Services.AddSingleton<CatAfectacionIgvMapper>();
 builder.Services.AddSingleton<CatEstadoSunatMapper>();
+builder.Services.AddSingleton<TiposHabitacionMapper>();
 
 // Servicios
 builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
@@ -30,7 +31,7 @@ builder.Services.AddScoped<ICatTipoDocumentoService, CatTipoDocumentoService>();
 builder.Services.AddScoped<ICatTipoComprobanteService, CatTipoComprobanteService>();
 builder.Services.AddScoped<ICatAfectacionIgvService, CatAfectacionIgvService>();
 builder.Services.AddScoped<ICatEstadoSunatService, CatEstadoSunatService>();
-
+builder.Services.AddScoped<ITiposHabitacionService, TiposHabitacionService>();
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
