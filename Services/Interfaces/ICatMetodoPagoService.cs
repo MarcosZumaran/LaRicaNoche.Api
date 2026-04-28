@@ -1,0 +1,13 @@
+using LaRicaNoche.Api.DTOs.Request;
+using LaRicaNoche.Api.DTOs.Response;
+
+namespace LaRicaNoche.Api.Services.Interfaces;
+
+public interface ICatMetodoPagoService
+{
+    Task<IEnumerable<CatMetodoPagoResponseDto>> GetAllAsync();
+    Task<CatMetodoPagoResponseDto?> GetByIdAsync(string codigo);
+    Task<CatMetodoPagoResponseDto> CreateAsync(CatMetodoPagoCreateDto dto);
+    Task<bool> UpdateAsync(string codigo, CatMetodoPagoUpdateDto dto);
+    Task<bool> DeleteAsync(string codigo);
+}
