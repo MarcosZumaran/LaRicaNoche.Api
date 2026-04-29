@@ -26,6 +26,7 @@ builder.Services.AddSingleton<CatAfectacionIgvMapper>();
 builder.Services.AddSingleton<CatEstadoSunatMapper>();
 builder.Services.AddSingleton<TiposHabitacionMapper>();
 builder.Services.AddSingleton<UsuarioMapper>();
+builder.Services.AddSingleton<ClienteMapper>();
 
 // Servicios
 builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
@@ -37,6 +38,7 @@ builder.Services.AddScoped<ICatAfectacionIgvService, CatAfectacionIgvService>();
 builder.Services.AddScoped<ICatEstadoSunatService, CatEstadoSunatService>();
 builder.Services.AddScoped<ITiposHabitacionService, TiposHabitacionService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 
 // Configuración JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
