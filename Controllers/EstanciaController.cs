@@ -1,0 +1,69 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+using LaRicaNoche.Api.DTOs.Request;
+using LaRicaNoche.Api.Services.Interfaces;
+
+namespace LaRicaNoche.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class EstanciaController : ControllerBase
+{
+    private readonly IEstanciaService _service;
+
+    public EstanciaController(IEstanciaService service)
+    {
+        _service = service;
+    }
+
+    private int? ObtenerIdUsuario()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (claim is null) return null;
+        return int.TryParse(claim.Value, out int id) ? id : null;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var result = await _service.GetAllAsync();
+        return Ok(result);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var result = await _service.GetByIdAsync(id);
+        return result is not null ? Ok(result) : NotFound();
+    }
+
+    [HttpPost("checkin")]
+    public async Task<IActionResult> CheckIn(CheckInDto dto)
+    {
+        try
+        {
+            var idUsuario = ObtenerIdUsuario();
+            var result = await _service.CheckInAsync(dto, idUsuario);
+            return CreatedAtAction(nameof(GetById), new { id = result.IdEstancia }, result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+
+    [HttpPost("{id}/checkout")]
+    public async Task<IActionResult> CheckOut(int id)
+    {
+        try
+        {
+            var idUsuario = ObtenerIdUsuario();
+            var result = await _service.CheckOutAsync(id, idUsuario);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+}
