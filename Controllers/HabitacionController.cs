@@ -67,6 +67,21 @@ public class HabitacionController : ControllerBase
         }
     }
 
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> Patch(int id, HabitacionUpdateDto dto)
+    {
+        try
+        {
+            var idUsuario = ObtenerIdUsuario();
+            var updated = await _service.UpdateAsync(id, dto, idUsuario);
+            return updated ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { mensaje = ex.Message });
+        }
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
