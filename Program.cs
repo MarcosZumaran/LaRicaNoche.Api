@@ -28,6 +28,7 @@ builder.Services.AddSingleton<TiposHabitacionMapper>();
 builder.Services.AddSingleton<UsuarioMapper>();
 builder.Services.AddSingleton<ClienteMapper>();
 builder.Services.AddSingleton<HabitacionMapper>();
+builder.Services.AddSingleton<ProductoMapper>();
 
 // Servicios
 builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
@@ -42,6 +43,7 @@ builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IHabitacionService, HabitacionService>();
 builder.Services.AddScoped<IEstanciaService, EstanciaService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
 
 // Configuración JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");

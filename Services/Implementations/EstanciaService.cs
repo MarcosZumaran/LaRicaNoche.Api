@@ -61,8 +61,7 @@ public class EstanciaService : IEstanciaService
         }
         else
         {
-            cliente = await _db.Clientes
-                .FirstOrDefaultAsync(c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
+            cliente = (await _db.Clientes.FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000"))!;
 
             if (cliente is null)
             {
