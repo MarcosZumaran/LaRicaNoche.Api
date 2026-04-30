@@ -1,6 +1,8 @@
 using LaRicaNoche.Api.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Playwright;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using LaRicaNoche.Api.Services.Interfaces;
 
 namespace LaRicaNoche.Api.Services.Implementations;
@@ -12,26 +14,21 @@ public class PdfService : IPdfService
     public PdfService(LaRicaNocheDbContext db)
     {
         _db = db;
+        QuestPDF.Settings.License = LicenseType.Community;
     }
-
+    
     public async Task<byte[]> GenerarPdfComprobanteAsync(int idComprobante)
     {
-        var comp = await _db.Comprobantes
-            .FirstOrDefaultAsync(c => c.IdComprobante == idComprobante);
+        var comp = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdComprobante == idComprobante);
+        if (comp == null) throw new InvalidOperationException("Comprobante no encontrado.");
 
-        if (comp == null)
-            throw new InvalidOperationException("Comprobante no encontrado.");
-
-        // Obtener datos relacionados manualmente
         string? numeroHabitacion = null;
         string? fechasHospedaje = null;
+        List<Models.ItemsVentum>? itemsVenta = null;
 
         if (comp.IdEstancia.HasValue)
         {
-            var estancia = await _db.Estancias
-                .Include(e => e.IdHabitacionNavigation)
-                .FirstOrDefaultAsync(e => e.IdEstancia == comp.IdEstancia.Value);
-
+            var estancia = await _db.Estancias.Include(e => e.IdHabitacionNavigation).FirstOrDefaultAsync(e => e.IdEstancia == comp.IdEstancia.Value);
             if (estancia != null)
             {
                 numeroHabitacion = estancia.IdHabitacionNavigation?.NumeroHabitacion;
@@ -39,117 +36,106 @@ public class PdfService : IPdfService
             }
         }
 
-        List<Models.ItemsVentum>? itemsVenta = null;
         if (comp.IdVenta.HasValue)
         {
-            var venta = await _db.Ventas
-                .Include(v => v.ItemsVenta)
-                    .ThenInclude(i => i.IdProductoNavigation)
-                .FirstOrDefaultAsync(v => v.IdVenta == comp.IdVenta.Value);
-
+            var venta = await _db.Ventas.Include(v => v.ItemsVenta).ThenInclude(i => i.IdProductoNavigation).FirstOrDefaultAsync(v => v.IdVenta == comp.IdVenta.Value);
             itemsVenta = venta?.ItemsVenta.ToList();
         }
 
-        var html = GenerarHtmlComprobante(comp, numeroHabitacion, fechasHospedaje, itemsVenta);
-
-        using var playwright = await Playwright.CreateAsync();
-        await using var browser = await playwright.Chromium.LaunchAsync(
-            new BrowserTypeLaunchOptions { Headless = true });
-        var page = await browser.NewPageAsync();
-        await page.SetContentAsync(html);
-        var pdfBytes = await page.PdfAsync(new PagePdfOptions
-        {
-            Format = "A5",
-            PrintBackground = true
-        });
-
-        return pdfBytes;
+        return GenerarPdfComprobante(comp, numeroHabitacion, fechasHospedaje, itemsVenta);
     }
 
     public async Task<byte[]> GenerarPdfVentaAsync(int idVenta)
     {
-        var comp = await _db.Comprobantes
-            .FirstOrDefaultAsync(c => c.IdVenta == idVenta);
-
-        if (comp == null)
-            throw new InvalidOperationException("Comprobante no encontrado para esta venta.");
-
+        var comp = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdVenta == idVenta);
+        if (comp == null) throw new InvalidOperationException("Comprobante de venta no encontrado.");
         return await GenerarPdfComprobanteAsync(comp.IdComprobante);
     }
 
     public async Task<byte[]> GenerarPdfEstanciaAsync(int idEstancia)
     {
-        var comp = await _db.Comprobantes
-            .FirstOrDefaultAsync(c => c.IdEstancia == idEstancia);
-
-        if (comp == null)
-            throw new InvalidOperationException("Comprobante no encontrado para esta estancia.");
-
+        var comp = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdEstancia == idEstancia);
+        if (comp == null) throw new InvalidOperationException("Comprobante de estancia no encontrado.");
         return await GenerarPdfComprobanteAsync(comp.IdComprobante);
     }
 
-    private string GenerarHtmlComprobante(
-        Models.Comprobante comp,
-        string? numeroHabitacion,
-        string? fechasHospedaje,
-        List<Models.ItemsVentum>? itemsVenta)
+    // --- Lógica de generación de PDF con QuestPDF ---
+    private byte[] GenerarPdfComprobante(Models.Comprobante comp, string? numeroHabitacion, string? fechasHospedaje, List<Models.ItemsVentum>? itemsVenta)
     {
         string tipo = comp.TipoComprobante == "03" ? "BOLETA DE VENTA" : "FACTURA";
         string cliente = comp.ClienteNombre ?? "CLIENTE ANÓNIMO";
         string doc = comp.ClienteDocumentoNum ?? "—";
         string metodo = comp.MetodoPagoNavigation?.Descripcion ?? comp.MetodoPago ?? "—";
 
-        string itemsHtml = "";
-
-        if (numeroHabitacion != null && fechasHospedaje != null)
+        var document = Document.Create(container =>
         {
-            itemsHtml += $@"
-            <tr>
-                <td>Hospedaje {numeroHabitacion} ({fechasHospedaje})</td>
-                <td>1</td>
-                <td>{comp.MontoTotal - comp.IgvMonto:F2}</td>
-                <td>{comp.MontoTotal:F2}</td>
-            </tr>";
-        }
-
-        if (itemsVenta != null)
-        {
-            foreach (var item in itemsVenta)
+            container.Page(page =>
             {
-                itemsHtml += $@"
-                <tr>
-                    <td>{item.IdProductoNavigation?.Nombre}</td>
-                    <td>{item.Cantidad}</td>
-                    <td>{item.PrecioUnitario:F2}</td>
-                    <td>{item.Subtotal:F2}</td>
-                </tr>";
-            }
-        }
+                page.Size(PageSizes.A5);
+                page.Margin(20);
+                page.DefaultTextStyle(x => x.FontSize(10));
 
-        return $@"
-            <!DOCTYPE html>
-            <html><head><meta charset='utf-8'><style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }}
-            h2 {{ text-align: center; }}
-            table {{ width: 100%; border-collapse: collapse; }}
-            th, td {{ border: 1px solid #ccc; padding: 4px; text-align: left; }}
-            th {{ background-color: #f2f2f2; }}
-            .right {{ text-align: right; }}
-            .total {{ font-weight: bold; }}
-            </style></head><body>
-            <h2>{tipo}</h2>
-            <p><strong>Serie/Número:</strong> {comp.Serie}-{comp.Correlativo}</p>
-            <p><strong>Fecha:</strong> {comp.FechaEmision:dd/MM/yyyy}</p>
-            <p><strong>Cliente:</strong> {cliente} | <strong>Doc:</strong> {doc}</p>
-            <p><strong>Método de pago:</strong> {metodo}</p>
-            <table>
-                <thead><tr><th>Descripción</th><th>Cant.</th><th>P.Unit.</th><th>Subtotal</th></tr></thead>
-                <tbody>{itemsHtml}</tbody>
-            </table>
-            <p class='right'>Subtotal: S/ {comp.MontoTotal - comp.IgvMonto:F2}</p>
-            <p class='right'>IGV (10.5%): S/ {comp.IgvMonto:F2}</p>
-            <h3 class='right'>TOTAL: S/ {comp.MontoTotal:F2}</h3>
-            </body></html>";
+                page.Content().Column(col =>
+                {
+                    // 1. Encabezado
+                    col.Item().AlignCenter().Text(tipo).FontSize(18).Bold();
+                    col.Item().AlignCenter().Text($"Serie/Número: {comp.Serie}-{comp.Correlativo}");
+                    col.Item().AlignCenter().Text($"Fecha: {comp.FechaEmision:dd/MM/yyyy}");
+                    col.Item().AlignCenter().Text($"Cliente: {cliente}");
+                    col.Item().AlignCenter().Text($"Doc: {doc} | Pago: {metodo}");
+                    col.Item().PaddingVertical(10);
+
+                    // 2. Tabla de Items
+                    col.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(1);
+                            columns.RelativeColumn(1);
+                            columns.RelativeColumn(1);
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Text("Descripción").Bold();
+                            header.Cell().Text("Cant.").Bold();
+                            header.Cell().Text("P.Unit.").Bold();
+                            header.Cell().Text("Subtotal").Bold();
+                        });
+
+                        // Items de Hospedaje
+                        if (numeroHabitacion != null && fechasHospedaje != null)
+                        {
+                            table.Cell().Text($"Hospedaje {numeroHabitacion} ({fechasHospedaje})");
+                            table.Cell().Text("1");
+                            table.Cell().Text($"{comp.MontoTotal - comp.IgvMonto:F2}");
+                            table.Cell().Text($"{comp.MontoTotal:F2}");
+                        }
+
+                        // Items de Venta
+                        if (itemsVenta != null)
+                        {
+                            foreach (var item in itemsVenta)
+                            {
+                                table.Cell().Text(item.IdProductoNavigation?.Nombre ?? "Producto");
+                                table.Cell().Text(item.Cantidad.ToString());
+                                table.Cell().Text($"{item.PrecioUnitario:F2}");
+                                table.Cell().Text($"{item.Subtotal:F2}");
+                            }
+                        }
+                    });
+
+                    col.Item().PaddingVertical(5);
+
+                    // 3. Totales
+                    col.Item().AlignRight().Text($"Subtotal: S/ {comp.MontoTotal - comp.IgvMonto:F2}");
+                    col.Item().AlignRight().Text($"IGV (10.5%): S/ {comp.IgvMonto:F2}");
+                    col.Item().AlignRight().Text($"TOTAL: S/ {comp.MontoTotal:F2}").FontSize(12).Bold();
+                });
+            });
+        });
+
+        return document.GeneratePdf();
     }
-
 }
