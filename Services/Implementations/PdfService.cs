@@ -16,7 +16,7 @@ public class PdfService : IPdfService
         _db = db;
         QuestPDF.Settings.License = LicenseType.Community;
     }
-    
+
     public async Task<byte[]> GenerarPdfComprobanteAsync(int idComprobante)
     {
         var comp = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdComprobante == idComprobante);
@@ -132,6 +132,66 @@ public class PdfService : IPdfService
                     col.Item().AlignRight().Text($"Subtotal: S/ {comp.MontoTotal - comp.IgvMonto:F2}");
                     col.Item().AlignRight().Text($"IGV (10.5%): S/ {comp.IgvMonto:F2}");
                     col.Item().AlignRight().Text($"TOTAL: S/ {comp.MontoTotal:F2}").FontSize(12).Bold();
+                });
+            });
+        });
+
+        return document.GeneratePdf();
+    }
+    
+    public async Task<byte[]> GenerarPdfCierreCajaAsync(DateOnly fecha)
+    {
+        var datos = await _db.VCierreCajaDiarios
+            .Where(v => v.Fecha == fecha)
+            .ToListAsync();
+
+        decimal totalGeneral = datos.Sum(d => d.Ingresos ?? 0);
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(30);
+                page.DefaultTextStyle(x => x.FontSize(10));
+
+                page.Content().Column(col =>
+                {
+                    // Encabezado
+                    col.Item().AlignCenter().Text("CIERRE DE CAJA").FontSize(16).Bold();
+                    col.Item().AlignCenter().Text($"Fecha: {fecha:dd/MM/yyyy}").FontSize(12);
+                    col.Item().PaddingVertical(10);
+
+                    // Tabla
+                    col.Item().Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(2); // Concepto
+                            columns.RelativeColumn(2); // Método de Pago
+                            columns.RelativeColumn(1); // Ingresos
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Text("Concepto").Bold();
+                            header.Cell().Text("Método de Pago").Bold();
+                            header.Cell().Text("Ingresos").Bold().AlignRight();
+                        });
+
+                        foreach (var item in datos)
+                        {
+                            table.Cell().Text(item.Concepto ?? "—");
+                            table.Cell().Text(item.MetodoPago ?? "—");
+                            table.Cell().AlignRight().Text($"S/ {(item.Ingresos ?? 0):F2}");
+                        }
+                    });
+
+                    col.Item().PaddingVertical(5);
+
+                    // Total general
+                    col.Item().AlignRight().Text($"TOTAL GENERAL: S/ {totalGeneral:F2}")
+                        .FontSize(12).Bold();
                 });
             });
         });

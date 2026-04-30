@@ -51,4 +51,18 @@ public class PdfController : ControllerBase
             return NotFound(new { mensaje = ex.Message });
         }
     }
+
+    [HttpGet("CierreCaja")]
+    public async Task<IActionResult> GetCierreCajaPdf([FromQuery] DateOnly fecha)
+    {
+        try
+        {
+            var bytes = await _pdfService.GenerarPdfCierreCajaAsync(fecha);
+            return File(bytes, "application/pdf", $"cierre_caja_{fecha:yyyyMMdd}.pdf");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
 }
