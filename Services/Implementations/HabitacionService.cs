@@ -64,7 +64,17 @@ public class HabitacionService : IHabitacionService
         var entity = await _db.Habitaciones.FindAsync(id);
         if (entity is null) return false;
 
-        _mapper.UpdateFromDto(dto, entity);
+        if (dto.Piso.HasValue) entity.Piso = dto.Piso.Value;
+
+        if (dto.Descripcion != null) entity.Descripcion = dto.Descripcion;
+
+        if (dto.IdTipo.HasValue) entity.IdTipo = dto.IdTipo.Value;
+
+        if (dto.PrecioNoche.HasValue) entity.PrecioNoche = dto.PrecioNoche.Value;
+
+        if (dto.IdEstado.HasValue) entity.IdEstado = dto.IdEstado.Value;
+
+        // Estos campos siempre se actualizan en cada cambio
         entity.FechaUltimoCambio = DateTime.UtcNow;
         entity.UsuarioCambio = idUsuario;
 
