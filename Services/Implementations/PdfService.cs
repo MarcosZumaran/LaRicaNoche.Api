@@ -66,6 +66,28 @@ public class PdfService : IPdfService
         return pdfBytes;
     }
 
+    public async Task<byte[]> GenerarPdfVentaAsync(int idVenta)
+    {
+        var comp = await _db.Comprobantes
+            .FirstOrDefaultAsync(c => c.IdVenta == idVenta);
+
+        if (comp == null)
+            throw new InvalidOperationException("Comprobante no encontrado para esta venta.");
+
+        return await GenerarPdfComprobanteAsync(comp.IdComprobante);
+    }
+
+    public async Task<byte[]> GenerarPdfEstanciaAsync(int idEstancia)
+    {
+        var comp = await _db.Comprobantes
+            .FirstOrDefaultAsync(c => c.IdEstancia == idEstancia);
+
+        if (comp == null)
+            throw new InvalidOperationException("Comprobante no encontrado para esta estancia.");
+
+        return await GenerarPdfComprobanteAsync(comp.IdComprobante);
+    }
+
     private string GenerarHtmlComprobante(
         Models.Comprobante comp,
         string? numeroHabitacion,
@@ -128,5 +150,6 @@ public class PdfService : IPdfService
             <p class='right'>IGV (10.5%): S/ {comp.IgvMonto:F2}</p>
             <h3 class='right'>TOTAL: S/ {comp.MontoTotal:F2}</h3>
             </body></html>";
-        }
+    }
+
 }

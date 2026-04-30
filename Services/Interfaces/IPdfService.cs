@@ -1,5 +1,8 @@
 namespace LaRicaNoche.Api.Services.Interfaces;
+
 public interface IPdfService
 {
     Task<byte[]> GenerarPdfComprobanteAsync(int idComprobante);
+    Task<byte[]> GenerarPdfVentaAsync(int idVenta);
+    Task<byte[]> GenerarPdfEstanciaAsync(int idEstancia);
 }

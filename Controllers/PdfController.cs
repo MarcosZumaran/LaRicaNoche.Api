@@ -23,4 +23,32 @@ public class PdfController : ControllerBase
             return NotFound(new { mensaje = ex.Message });
         }
     }
+
+    [HttpGet("Venta/{idVenta}")]
+    public async Task<IActionResult> GetVentaPdf(int idVenta)
+    {
+        try
+        {
+            var bytes = await _pdfService.GenerarPdfVentaAsync(idVenta);
+            return File(bytes, "application/pdf", $"venta_{idVenta}.pdf");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { mensaje = ex.Message });
+        }
+    }
+
+    [HttpGet("Estancia/{idEstancia}")]
+    public async Task<IActionResult> GetEstanciaPdf(int idEstancia)
+    {
+        try
+        {
+            var bytes = await _pdfService.GenerarPdfEstanciaAsync(idEstancia);
+            return File(bytes, "application/pdf", $"estancia_{idEstancia}.pdf");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { mensaje = ex.Message });
+        }
+    }
 }
