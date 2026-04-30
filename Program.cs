@@ -47,6 +47,7 @@ builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IComprobanteService, ComprobanteService>();
 builder.Services.AddScoped<IReporteService, ReporteService>();
 builder.Services.AddScoped<IVentaService, VentaService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
 
 // Configuración JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
