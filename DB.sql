@@ -1,21 +1,34 @@
 -- ================================================================
 -- Motor: SQL Server
+-- Se opto por un modelo modular
 -- ================================================================
 
 USE [master];
 GO
 
--- Creacion de la db
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'LaRicaNocheDB')
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'HotelDB')
 BEGIN
-    CREATE DATABASE [LaRicaNocheDB];
+    CREATE DATABASE [HotelDB];
 END
 GO
 
-USE [LaRicaNocheDB];
+USE [HotelDB];
 GO
 
--- TABLAS CATÁLOGO
+-- =============================================
+-- TABLAS CATÁLOGO (SUNAT + NEGOCIO)
+-- =============================================
+
+-- Configuración del hotel (única fila, parametrizable)
+CREATE TABLE configuracion_hotel (
+    id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    nombre NVARCHAR(100) NOT NULL,
+    direccion NVARCHAR(200),
+    telefono NVARCHAR(20),
+    ruc NVARCHAR(11),
+    tasa_igv_hotel DECIMAL(5,2) NOT NULL DEFAULT 10.50,
+    tasa_igv_productos DECIMAL(5,2) NOT NULL DEFAULT 18.00
+);
 
 -- Tipos de documento de identidad (SUNAT)
 CREATE TABLE cat_tipo_documento (
@@ -41,11 +54,22 @@ CREATE TABLE cat_afectacion_igv (
     descripcion NVARCHAR(60) NOT NULL
 );
 
--- Estados de la habitación
+-- Categorías de productos (modular)
+CREATE TABLE cat_categoria_producto (
+    id_categoria INT PRIMARY KEY IDENTITY(1,1),
+    nombre NVARCHAR(50) NOT NULL,
+    descripcion NVARCHAR(100)
+);
+
+-- Estados de habitación (ahora con comportamiento configurable)
 CREATE TABLE cat_estado_habitacion (
     id_estado INT PRIMARY KEY IDENTITY(1,1),
     nombre NVARCHAR(30) NOT NULL,
-    descripcion NVARCHAR(100)
+    descripcion NVARCHAR(100),
+    permite_checkin BIT NOT NULL DEFAULT 0,
+    permite_checkout BIT NOT NULL DEFAULT 0,
+    es_estado_final BIT NOT NULL DEFAULT 0,
+    color_ui VARCHAR(20) NULL
 );
 
 -- Roles de usuario del sistema
@@ -61,13 +85,24 @@ CREATE TABLE cat_estado_sunat (
     descripcion_larga NVARCHAR(200)
 );
 
+-- Temporadas (para tarifas variables)
+CREATE TABLE temporadas (
+    id_temporada INT PRIMARY KEY IDENTITY(1,1),
+    nombre NVARCHAR(50) NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    multiplier DECIMAL(3,2) NOT NULL DEFAULT 1.00
+);
+
+-- =============================================
 -- TABLAS PRINCIPALES
+-- =============================================
 
 -- USUARIOS
 CREATE TABLE usuarios (
     id_usuario INT PRIMARY KEY IDENTITY(1,1),
     username NVARCHAR(50) UNIQUE NOT NULL,
-    password_hash NVARCHAR(255) NOT NULL,   -- optimizado a 255
+    password_hash NVARCHAR(255) NOT NULL,
     id_rol INT FOREIGN KEY REFERENCES cat_rol_usuario(id_rol),
     fecha_creacion DATETIME DEFAULT GETDATE(),
     esta_activo BIT DEFAULT 1
@@ -86,7 +121,7 @@ CREATE TABLE clientes (
     email NVARCHAR(100),
     direccion NVARCHAR(200),
     fecha_registro DATETIME DEFAULT GETDATE(),
-    fecha_verificacion_reniec DATETIME NULL,   -- para futura validación con RENIEC
+    fecha_verificacion_reniec DATETIME NULL,
     CONSTRAINT UQ_cliente_documento UNIQUE (tipo_documento, documento)
 );
 
@@ -97,6 +132,16 @@ CREATE TABLE tipos_habitacion (
     capacidad INT DEFAULT 2,
     descripcion NVARCHAR(200),
     precio_base DECIMAL(10,2) DEFAULT 50.00
+);
+
+-- Tarifas (relación tipo + temporada, opcionalmente fechas)
+CREATE TABLE tarifas (
+    id_tarifa INT PRIMARY KEY IDENTITY(1,1),
+    id_tipo_habitacion INT NOT NULL FOREIGN KEY REFERENCES tipos_habitacion(id_tipo),
+    id_temporada INT NULL FOREIGN KEY REFERENCES temporadas(id_temporada),
+    precio DECIMAL(10,2) NOT NULL,
+    fecha_inicio DATE NULL,
+    fecha_fin DATE NULL
 );
 
 -- HABITACIONES
@@ -112,7 +157,7 @@ CREATE TABLE habitaciones (
     usuario_cambio INT FOREIGN KEY REFERENCES usuarios(id_usuario)
 );
 
--- HISTÓRICO DE ESTADOS DE HABITACIÓN (auditoría)
+-- HISTÓRICO DE ESTADOS DE HABITACIÓN
 CREATE TABLE historial_estado_habitacion (
     id_historial INT PRIMARY KEY IDENTITY(1,1),
     id_habitacion INT FOREIGN KEY REFERENCES habitaciones(id_habitacion),
@@ -123,9 +168,7 @@ CREATE TABLE historial_estado_habitacion (
     observacion NVARCHAR(200)
 );
 
--- Índice para consultas frecuentes del historial
-CREATE INDEX IX_historial_habitacion_fecha
-ON historial_estado_habitacion(id_habitacion, fecha_cambio DESC);
+CREATE INDEX IX_historial_habitacion_fecha ON historial_estado_habitacion(id_habitacion, fecha_cambio DESC);
 
 -- RESERVAS
 CREATE TABLE reservas (
@@ -164,7 +207,7 @@ CREATE TABLE huespedes (
     fecha_registro DATETIME DEFAULT GETDATE()
 );
 
--- PRODUCTOS
+-- PRODUCTOS (ahora con categoría)
 CREATE TABLE productos (
     id_producto INT PRIMARY KEY IDENTITY(1,1),
     codigo_sunat NVARCHAR(20) NULL,
@@ -172,13 +215,25 @@ CREATE TABLE productos (
     descripcion NVARCHAR(200),
     precio_unitario DECIMAL(10,2) NOT NULL,
     id_afectacion_igv CHAR(2) FOREIGN KEY REFERENCES cat_afectacion_igv(codigo) DEFAULT '10',
+    id_categoria INT NULL FOREIGN KEY REFERENCES cat_categoria_producto(id_categoria),
     stock INT DEFAULT 0,
     stock_minimo INT DEFAULT 5,
     unidad_medida NVARCHAR(3) DEFAULT 'NIU',
     created_at DATETIME DEFAULT GETDATE()
 );
 
--- VENTAS DE PRODUCTOS
+-- Consumo de productos durante la estancia
+CREATE TABLE items_estancia (
+    id_item INT PRIMARY KEY IDENTITY(1,1),
+    id_estancia INT NOT NULL FOREIGN KEY REFERENCES estancias(id_estancia),
+    id_producto INT NOT NULL FOREIGN KEY REFERENCES productos(id_producto),
+    cantidad INT NOT NULL,
+    precio_unitario DECIMAL(10,2) NOT NULL,
+    subtotal AS (cantidad * precio_unitario) PERSISTED,
+    fecha_registro DATETIME DEFAULT GETDATE()
+);
+
+-- VENTAS DE PRODUCTOS (independientes, sin estancia)
 CREATE TABLE ventas (
     id_venta INT PRIMARY KEY IDENTITY(1,1),
     id_cliente INT NULL FOREIGN KEY REFERENCES clientes(id_cliente),
@@ -198,7 +253,7 @@ CREATE TABLE items_venta (
     subtotal AS (cantidad * precio_unitario) PERSISTED
 );
 
--- COMPROBANTES ELECTRÓNICOS (SUNAT) MEJORADO
+-- COMPROBANTES ELECTRÓNICOS (SUNAT)
 CREATE TABLE comprobantes (
     id_comprobante INT PRIMARY KEY IDENTITY(1,1),
     id_estancia INT NULL,
@@ -213,7 +268,7 @@ CREATE TABLE comprobantes (
     cliente_documento_num NVARCHAR(20),
     cliente_nombre NVARCHAR(200),
     metodo_pago CHAR(3) FOREIGN KEY REFERENCES cat_metodo_pago(codigo),
-    id_estado_sunat INT FOREIGN KEY REFERENCES cat_estado_sunat(codigo) DEFAULT 1, -- 1='Pendiente'
+    id_estado_sunat INT FOREIGN KEY REFERENCES cat_estado_sunat(codigo) DEFAULT 1,
     xml_firmado NVARCHAR(MAX),
     cdr_zip VARBINARY(MAX),
     fecha_envio DATETIME NULL,
@@ -222,43 +277,49 @@ CREATE TABLE comprobantes (
     UNIQUE (serie, correlativo)
 );
 
+-- Envíos de cierre de caja
+CREATE TABLE cierre_caja_envios (
+    fecha DATE PRIMARY KEY,
+    id_estado_sunat INT DEFAULT 1,
+    fecha_envio DATETIME NULL,
+    intentos_envio INT DEFAULT 0,
+    hash_xml NVARCHAR(64) NULL,
+    FOREIGN KEY (id_estado_sunat) REFERENCES cat_estado_sunat(codigo)
+);
+
 -- =============================================
--- INSERCIÓN DE DATOS BASE (catálogos)
+-- INSERCIÓN DE DATOS BASE (genéricos)
 -- =============================================
+
+INSERT INTO configuracion_hotel (nombre, direccion, telefono, ruc)
+VALUES ('Mi Hotel', 'Av. Principal 123', '999-999-999', '12345678901');
 
 INSERT INTO cat_tipo_documento (codigo, descripcion) VALUES
-('1','DNI'),
-('6','RUC'),
-('7','Pasaporte'),
-('0','Otros');   -- '0' incluye clientes sin identificación (solo si la boleta cumple el requisito de < S/700)
+('1','DNI'), ('6','RUC'), ('7','Pasaporte'), ('0','Otros');
 
 INSERT INTO cat_metodo_pago (codigo, descripcion) VALUES
-('005','Efectivo'),
-('006','Tarjeta de Crédito / Débito'),  -- Código para tarjetas
-('008','Transferencia bancaria (Yape/Plin)'), -- Código para Yape/Plin
-('001','Depósito en cuenta'),
-('999','Otros');
+('005','Efectivo'), ('006','Tarjeta de Crédito / Débito'),
+('008','Transferencia bancaria (Yape/Plin)'), ('001','Depósito en cuenta'), ('999','Otros');
 
 INSERT INTO cat_tipo_comprobante (codigo, descripcion) VALUES
-('03','Boleta de Venta'),
-('01','Factura');
+('03','Boleta de Venta'), ('01','Factura');
 
 INSERT INTO cat_afectacion_igv (codigo, descripcion) VALUES
-('10','Gravado - Operación Onerosa'),   -- (IGV 18%)
-('20','Exonerado'),
-('30','Inafecto'),
-('40','Exportación');
+('10','Gravado - Operación Onerosa'), ('20','Exonerado'), ('30','Inafecto'), ('40','Exportación');
 
-INSERT INTO cat_estado_habitacion (nombre, descripcion) VALUES
-('Disponible', 'Lista para ser ocupada'),
-('Ocupada', 'Con huéspedes actualmente'),
-('Limpieza', 'En proceso de limpieza'),
-('Mantenimiento', 'Fuera de servicio');
+INSERT INTO cat_categoria_producto (nombre, descripcion) VALUES
+('Bebidas', 'Bebidas alcohólicas y no alcohólicas'),
+('Snacks', 'Snacks y piqueos'),
+('Servicios', 'Servicios adicionales');
+
+INSERT INTO cat_estado_habitacion (nombre, descripcion, permite_checkin, permite_checkout, es_estado_final, color_ui) VALUES
+('Disponible', 'Lista para ser ocupada', 1, 0, 0, 'success'),
+('Ocupada', 'Con huéspedes actualmente', 0, 1, 0, 'warning'),
+('Limpieza', 'En proceso de limpieza', 0, 0, 0, 'info'),
+('Mantenimiento', 'Fuera de servicio', 0, 0, 0, 'error');
 
 INSERT INTO cat_rol_usuario (nombre) VALUES
-('Administrador'),
-('Recepcionista'),
-('Limpieza');
+('Administrador'), ('Recepcionista'), ('Limpieza');
 
 INSERT INTO cat_estado_sunat (codigo, descripcion, descripcion_larga) VALUES
 (1, 'Pendiente', 'El comprobante se generó pero no se ha enviado.'),
@@ -268,20 +329,24 @@ INSERT INTO cat_estado_sunat (codigo, descripcion, descripcion_larga) VALUES
 (5, 'Observado', 'Aceptado con observaciones menores.'),
 (6, 'Anulado', 'El comprobante fue dado de baja.');
 
--- Tipo de habitación inicial
+INSERT INTO temporadas (nombre, fecha_inicio, fecha_fin, multiplier) VALUES
+('Alta', '2026-06-01', '2026-08-31', 1.20),
+('Baja', '2026-09-01', '2026-11-30', 0.85);
+
 INSERT INTO tipos_habitacion (nombre, capacidad, descripcion, precio_base)
 VALUES ('Matrimonial', 2, 'Habitación estándar para dos personas', 50.00);
 
--- Cliente anónimo por defecto (para boletas menores a S/700)
+INSERT INTO tarifas (id_tipo_habitacion, id_temporada, precio)
+VALUES (1, NULL, 50.00); -- tarifa base sin temporada
+
 INSERT INTO clientes (tipo_documento, documento, nombres, apellidos, nacionalidad)
 VALUES ('0', '00000000', 'CLIENTE', 'ANONIMO', 'PERUANA');
 GO
 
 -- =============================================
--- VISTAS ÚTILES (actualizadas)
+-- VISTAS (se mantienen compatibles)
 -- =============================================
 
--- Reporte diario de ingresos considerando todos los comprobantes del día
 CREATE OR ALTER VIEW v_cierre_caja_diario AS
 SELECT
     CAST(c.fecha_emision AS DATE) AS fecha,
@@ -290,7 +355,7 @@ SELECT
     'Hospedaje' AS concepto
 FROM comprobantes c
 INNER JOIN cat_metodo_pago cm ON c.metodo_pago = cm.codigo
-WHERE c.tipo_comprobante = '03'   -- boletas
+WHERE c.tipo_comprobante = '03'
 GROUP BY CAST(c.fecha_emision AS DATE), cm.descripcion
 UNION ALL
 SELECT
@@ -303,7 +368,6 @@ INNER JOIN cat_metodo_pago cm ON v.metodo_pago = cm.codigo
 GROUP BY CAST(v.fecha_venta AS DATE), cm.descripcion;
 GO
 
--- Estado actual de habitaciones
 CREATE OR ALTER VIEW v_estado_habitaciones AS
 SELECT
     h.numero_habitacion,
@@ -316,15 +380,4 @@ INNER JOIN cat_estado_habitacion e ON h.id_estado = e.id_estado
 INNER JOIN tipos_habitacion th ON h.id_tipo = th.id_tipo;
 GO
 
--- creacion de la tabla envios cierre caja
-CREATE TABLE cierre_caja_envios (
-    fecha DATE PRIMARY KEY,
-    id_estado_sunat INT DEFAULT 1,
-    fecha_envio DATETIME NULL,
-    intentos_envio INT DEFAULT 0,
-    hash_xml NVARCHAR(64) NULL,
-    FOREIGN KEY (id_estado_sunat) REFERENCES cat_estado_sunat(codigo)
-);
-GO
-
-PRINT 'Base de datos LaRicaNocheDB creada/actualizada exitosamente.';
+PRINT 'Base de datos HotelDB creada exitosamente.';

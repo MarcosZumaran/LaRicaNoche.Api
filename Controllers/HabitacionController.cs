@@ -95,4 +95,12 @@ public class HabitacionController : ControllerBase
             return Conflict(new { mensaje = ex.Message });
         }
     }
+
+        [HttpGet("estado-actual")]
+    public async Task<IActionResult> GetEstadoActual()
+    {
+        var rolUsuario = User.FindFirst(ClaimTypes.Role)?.Value;
+        var result = await _service.GetEstadoActualAsync(rolUsuario);
+        return Ok(result);
+    }
 }

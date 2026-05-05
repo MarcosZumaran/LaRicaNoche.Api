@@ -13,6 +13,9 @@ public class EstanciaService : IEstanciaService
     private readonly LaRicaNocheDbContext _db;
     private readonly ILuaService _lua;
 
+    private const string ESTADO_ACTIVA = "Activa";
+    private const string ESTADO_FINALIZADA = "Finalizada";
+
     public EstanciaService(LaRicaNocheDbContext db, ILuaService lua)
     {
         _db = db;
@@ -61,7 +64,7 @@ public class EstanciaService : IEstanciaService
         }
         else
         {
-            cliente = (await _db.Clientes.FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000"))!;
+            cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
 
             if (cliente is null)
             {
@@ -118,7 +121,7 @@ public class EstanciaService : IEstanciaService
             FechaCheckin = DateTime.UtcNow,
             FechaCheckoutPrevista = dto.FechaCheckoutPrevista,
             MontoTotal = montoTotal,
-            Estado = "Activa",
+            Estado = ESTADO_ACTIVA,
             CreatedAt = DateTime.UtcNow
         };
         _db.Estancias.Add(estancia);
@@ -182,11 +185,11 @@ public class EstanciaService : IEstanciaService
         if (estancia is null)
             throw new InvalidOperationException("La estancia no existe.");
 
-        if (estancia.Estado != "Activa")
+        if (estancia.Estado != ESTADO_ACTIVA)
             throw new InvalidOperationException("La estancia no está activa.");
 
         // 1. Cambiar estado de la estancia
-        estancia.Estado = "Finalizada";
+        estancia.Estado = ESTADO_FINALIZADA;
         estancia.FechaCheckoutReal = DateTime.UtcNow;
 
         // 2. Cambiar estado de la habitación a Limpieza

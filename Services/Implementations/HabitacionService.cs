@@ -12,6 +12,9 @@ public class HabitacionService : IHabitacionService
 {
     private readonly LaRicaNocheDbContext _db;
     private readonly HabitacionMapper _mapper;
+    private const string ESTADO_DISPONIBLE = "Disponible";
+    private const string ESTADO_OCUPADA = "Ocupada";
+    private const string ESTADO_LIMPIEZA = "Limpieza";
 
     public HabitacionService(LaRicaNocheDbContext db, HabitacionMapper mapper)
     {
@@ -64,17 +67,33 @@ public class HabitacionService : IHabitacionService
         var entity = await _db.Habitaciones.FindAsync(id);
         if (entity is null) return false;
 
-        if (dto.Piso.HasValue) entity.Piso = dto.Piso.Value;
+        int? estadoAnterior = entity.IdEstado;
 
-        if (dto.Descripcion != null) entity.Descripcion = dto.Descripcion;
+        if (dto.Piso.HasValue)
+            entity.Piso = dto.Piso.Value;
+        if (dto.Descripcion != null)
+            entity.Descripcion = dto.Descripcion;
+        if (dto.IdTipo.HasValue)
+            entity.IdTipo = dto.IdTipo.Value;
+        if (dto.PrecioNoche.HasValue)
+            entity.PrecioNoche = dto.PrecioNoche.Value;
+        if (dto.IdEstado.HasValue)
+            entity.IdEstado = dto.IdEstado.Value;
 
-        if (dto.IdTipo.HasValue) entity.IdTipo = dto.IdTipo.Value;
+        if (dto.IdEstado.HasValue && estadoAnterior != dto.IdEstado.Value)
+        {
+            var historial = new HistorialEstadoHabitacion
+            {
+                IdHabitacion = entity.IdHabitacion,
+                IdEstadoAnterior = estadoAnterior,
+                IdEstadoNuevo = dto.IdEstado.Value,
+                FechaCambio = DateTime.UtcNow,
+                IdUsuario = idUsuario,
+                Observacion = "Cambio manual de estado"
+            };
+            _db.HistorialEstadoHabitacions.Add(historial);
+        }
 
-        if (dto.PrecioNoche.HasValue) entity.PrecioNoche = dto.PrecioNoche.Value;
-
-        if (dto.IdEstado.HasValue) entity.IdEstado = dto.IdEstado.Value;
-
-        // Estos campos siempre se actualizan en cada cambio
         entity.FechaUltimoCambio = DateTime.UtcNow;
         entity.UsuarioCambio = idUsuario;
 
@@ -112,5 +131,65 @@ public class HabitacionService : IHabitacionService
             h.FechaUltimoCambio,
             h.UsuarioCambio
         );
+    }
+
+    public async Task<IEnumerable<HabitacionEstadoActualDto>> GetEstadoActualAsync(string? rolUsuario)
+    {
+        var habitaciones = await _db.Habitaciones
+            .Include(h => h.IdTipoNavigation)
+            .Include(h => h.IdEstadoNavigation)
+            .Include(h => h.Estancia.Where(e => e.Estado == "Activa"))
+                .ThenInclude(e => e.IdClienteTitularNavigation)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return habitaciones.Select(h => new HabitacionEstadoActualDto(
+            h.IdHabitacion,
+            h.NumeroHabitacion,
+            h.Piso,
+            h.IdTipoNavigation?.Nombre ?? "",
+            h.PrecioNoche,
+            h.IdEstado ?? 0,
+            h.IdEstadoNavigation?.Nombre ?? "",
+            h.Descripcion,
+            h.Estancia.FirstOrDefault()?.IdEstancia,
+            h.Estancia.FirstOrDefault()?.IdClienteTitularNavigation != null
+                ? $"{h.Estancia.First().IdClienteTitularNavigation!.Nombres} {h.Estancia.First().IdClienteTitularNavigation!.Apellidos}"
+                : null,
+            ObtenerAccionesDisponibles(h.IdEstado ?? 0, rolUsuario)
+        )).ToList();
+    }
+
+    private static List<string> ObtenerAccionesDisponibles(int idEstado, string? rolUsuario)
+    {
+        var acciones = new List<string>();
+
+        if (rolUsuario == "Administrador" || rolUsuario == "Recepcionista")
+        {
+            if (idEstado == 1) // Disponible
+                acciones.Add("CheckIn");
+            if (idEstado == 2) // Ocupada
+            {
+                acciones.Add("CheckOut");
+                acciones.Add("PasarLimpieza");
+            }
+        }
+
+        if (rolUsuario == "Administrador")
+        {
+            if (idEstado == 1) // Disponible
+                acciones.Add("Mantenimiento");
+            if (idEstado == 3) // Limpieza
+                acciones.Add("FinalizarLimpieza");
+            if (idEstado == 4) // Mantenimiento
+                acciones.Add("Habilitar");
+        }
+
+        if (rolUsuario == "Limpieza" && idEstado == 3) // Limpieza
+        {
+            acciones.Add("FinalizarLimpieza");
+        }
+
+        return acciones;
     }
 }
