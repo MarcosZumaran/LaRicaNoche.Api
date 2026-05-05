@@ -6,7 +6,6 @@ namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class ConfiguracionHotelController : ControllerBase
 {
     private readonly IConfiguracionHotelService _service;

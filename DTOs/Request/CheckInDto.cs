@@ -9,6 +9,7 @@ public sealed record CheckInDto
     public string Apellidos { get; init; } = string.Empty;
     public string? Telefono { get; init; }
     public DateTime FechaCheckoutPrevista { get; init; }
-    public string MetodoPago { get; init; } = "005"; // Efectivo
+    public string MetodoPago { get; init; } = "005";
     public bool UsarClienteAnonimo { get; init; } = false;
+    public int? IdReserva { get; init; } // <--- nuevo campo
 }

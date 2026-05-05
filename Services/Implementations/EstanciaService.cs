@@ -44,6 +44,7 @@ namespace HotelGenericoApi.Services.Implementations
 
         public async Task<EstanciaResponseDto> CheckInAsync(CheckInDto dto, int? idUsuario)
         {
+            // Verificar que la habitación esté disponible (permite_checkin = true)
             var habitacion = await _db.Habitaciones
                 .Include(h => h.IdEstadoNavigation)
                 .Include(h => h.IdTipoNavigation)
@@ -51,8 +52,21 @@ namespace HotelGenericoApi.Services.Implementations
 
             if (habitacion is null) throw new InvalidOperationException("La habitación no existe.");
 
-            if (habitacion.IdEstadoNavigation == null || !habitacion.IdEstadoNavigation.PermiteCheckin)
-                throw new InvalidOperationException("La habitación no está disponible para check‑in.");
+            if (habitacion.IdEstadoNavigation == null || !habitacion.IdEstadoNavigation.PermiteCheckin) throw new InvalidOperationException("La habitación no está disponible para check‑in.");
+
+            // 1.1 Validar reserva si se proporciona
+            if (dto.IdReserva.HasValue)
+            {
+                var reserva = await _db.Reservas.FindAsync(dto.IdReserva.Value);
+                if (reserva is null)
+                    throw new InvalidOperationException("La reserva especificada no existe.");
+                if (reserva.Estado != "Confirmada")
+                    throw new InvalidOperationException("La reserva no está confirmada.");
+                if (reserva.IdHabitacion != dto.IdHabitacion)
+                    throw new InvalidOperationException("La habitación no coincide con la reserva.");
+                // Actualizar estado de la reserva
+                reserva.Estado = "Check‑in realizado";
+            }
 
             Cliente cliente;
             if (dto.UsarClienteAnonimo)
@@ -63,8 +77,7 @@ namespace HotelGenericoApi.Services.Implementations
             }
             else
             {
-                cliente = await _db.Clientes
-                    .FirstOrDefaultAsync(c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
+                cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
 
                 if (cliente is null)
                 {
@@ -120,6 +133,7 @@ namespace HotelGenericoApi.Services.Implementations
             {
                 IdHabitacion = dto.IdHabitacion,
                 IdClienteTitular = cliente.IdCliente,
+                IdReserva = dto.IdReserva,
                 FechaCheckin = DateTime.UtcNow,
                 FechaCheckoutPrevista = dto.FechaCheckoutPrevista,
                 MontoTotal = montoTotal,

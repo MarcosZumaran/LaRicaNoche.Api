@@ -98,7 +98,7 @@ public class HabitacionController : ControllerBase
         }
     }
 
-        [HttpGet("estado-actual")]
+    [HttpGet("estado-actual")]
     public async Task<IActionResult> GetEstadoActual()
     {
         var rolUsuario = User.FindFirst(ClaimTypes.Role)?.Value;
