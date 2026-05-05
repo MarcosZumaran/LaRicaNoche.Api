@@ -51,6 +51,9 @@ builder.Services.AddScoped<ICierreCajaEnvioService, CierreCajaEnvioService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IConfiguracionHotelService, ConfiguracionHotelService>();
 
+// Setup de inicio si no hay un usuario admin
+builder.Services.AddScoped<SetupService>();
+
 // Configuración JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
