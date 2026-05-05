@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <NoWarn>RMG012;RMG020;RMG013;RMG066</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

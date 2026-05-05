@@ -2,11 +2,13 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class HabitacionController : ControllerBase
 {
     private readonly IHabitacionService _service;

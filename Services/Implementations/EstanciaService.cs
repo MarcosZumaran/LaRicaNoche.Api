@@ -86,9 +86,7 @@ namespace HotelGenericoApi.Services.Implementations
             if (noches < 1) noches = 1;
 
             var tarifa = await _db.Tarifas
-                .Where(t => t.IdTipoHabitacion == habitacion.IdTipo &&
-                       (t.FechaInicio == null || t.FechaInicio <= DateOnly.FromDateTime(DateTime.UtcNow)) &&
-                       (t.FechaFin == null || t.FechaFin >= DateOnly.FromDateTime(DateTime.UtcNow)))
+                .Where(t => t.IdTipoHabitacion == habitacion.IdTipo && (t.FechaInicio == null || t.FechaInicio <= DateOnly.FromDateTime(DateTime.UtcNow)) && (t.FechaFin == null || t.FechaFin >= DateOnly.FromDateTime(DateTime.UtcNow)))
                 .OrderByDescending(t => t.IdTemporadaNavigation != null ? t.IdTemporadaNavigation.Multiplier : 1)
                 .FirstOrDefaultAsync();
 
@@ -246,5 +244,52 @@ namespace HotelGenericoApi.Services.Implementations
                 e.CreatedAt
             );
         }
+
+        public async Task<EstanciaResponseDto> RegistrarConsumoAsync(int idEstancia, ConsumoEstanciaCreateDto dto, int? idUsuario)
+        {
+            var estancia = await _db.Estancias
+                .Include(e => e.IdHabitacionNavigation)
+                .Include(e => e.IdClienteTitularNavigation)
+                .FirstOrDefaultAsync(e => e.IdEstancia == idEstancia);
+
+            if (estancia is null) throw new InvalidOperationException("Estancia no encontrada.");
+            if (estancia.Estado != ESTADO_ACTIVA) throw new InvalidOperationException("La estancia no está activa.");
+
+            var producto = await _db.Productos.FindAsync(dto.IdProducto);
+            if (producto is null) throw new InvalidOperationException("Producto no encontrado.");
+
+            // Crear el item de consumo
+            var itemEstancia = new ItemsEstancium
+            {
+                IdEstancia = idEstancia,
+                IdProducto = dto.IdProducto,
+                Cantidad = dto.Cantidad,
+                PrecioUnitario = producto.PrecioUnitario,
+                FechaRegistro = DateTime.UtcNow
+            };
+            _db.ItemsEstancia.Add(itemEstancia);
+
+            // Actualizar el monto total de la estancia
+            // El subtotal es calculado por la base de datos
+            // Vamos a guardar y luego recargar para obtener el subtotal generado.
+            await _db.SaveChangesAsync();
+
+            // Recargamos el item para obtener el subtotal generado por la BD
+            await _db.Entry(itemEstancia).ReloadAsync();
+            decimal subtotal = itemEstancia.Subtotal ?? (producto.PrecioUnitario * dto.Cantidad);
+
+            estancia.MontoTotal += subtotal;
+            await _db.SaveChangesAsync();
+
+            var comprobante = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdEstancia == estancia.IdEstancia);
+            if (comprobante is not null)
+            {
+                comprobante.MontoTotal = estancia.MontoTotal;
+                await _db.SaveChangesAsync();
+            }
+
+            return MapToResponse(estancia);
+        }
     }
+
 }

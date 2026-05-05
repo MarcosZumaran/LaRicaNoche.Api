@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UsuarioController : ControllerBase
 {
     private readonly IUsuarioService _service;
@@ -51,6 +53,7 @@ public class UsuarioController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _service.LoginAsync(dto);

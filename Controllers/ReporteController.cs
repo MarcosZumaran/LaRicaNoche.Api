@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using HotelGenericoApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ReporteController : ControllerBase
 {
     private readonly IReporteService _service;

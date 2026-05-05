@@ -2,11 +2,13 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EstanciaController : ControllerBase
 {
     private readonly IEstanciaService _service;
@@ -59,6 +61,20 @@ public class EstanciaController : ControllerBase
         {
             var idUsuario = ObtenerIdUsuario();
             var result = await _service.CheckOutAsync(id, idUsuario);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+    [HttpPost("{id}/consumo")]
+    public async Task<IActionResult> RegistrarConsumo(int id, ConsumoEstanciaCreateDto dto)
+    {
+        try
+        {
+            var idUsuario = ObtenerIdUsuario();
+            var result = await _service.RegistrarConsumoAsync(id, dto, idUsuario);
             return Ok(result);
         }
         catch (InvalidOperationException ex)

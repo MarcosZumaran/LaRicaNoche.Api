@@ -9,4 +9,5 @@ public interface IEstanciaService
     Task<EstanciaResponseDto?> GetByIdAsync(int id);
     Task<EstanciaResponseDto> CheckInAsync(CheckInDto dto, int? idUsuario);
     Task<EstanciaResponseDto> CheckOutAsync(int idEstancia, int? idUsuario);
+    Task<EstanciaResponseDto> RegistrarConsumoAsync(int idEstancia, ConsumoEstanciaCreateDto dto, int? idUsuario);
 }

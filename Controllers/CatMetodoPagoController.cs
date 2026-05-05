@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CatMetodoPagoController : ControllerBase
 {
     private readonly ICatMetodoPagoService _service;

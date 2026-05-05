@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using HotelGenericoApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ComprobanteController : ControllerBase
 {
     private readonly IComprobanteService _service;
