@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using LaRicaNoche.Api.DTOs.Request;
-using LaRicaNoche.Api.Services.Interfaces;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.Services.Interfaces;
 
-namespace LaRicaNoche.Api.Controllers;
+namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

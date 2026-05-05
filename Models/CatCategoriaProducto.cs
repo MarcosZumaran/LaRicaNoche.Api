@@ -3,11 +3,13 @@ using System.Collections.Generic;
 
 namespace HotelGenericoApi.Models;
 
-public partial class CatAfectacionIgv
+public partial class CatCategoriaProducto
 {
-    public string Codigo { get; set; } = null!;
+    public int IdCategoria { get; set; }
 
-    public string Descripcion { get; set; } = null!;
+    public string Nombre { get; set; } = null!;
+
+    public string? Descripcion { get; set; }
 
     public virtual ICollection<Producto> Productos { get; set; } = new List<Producto>();
 }

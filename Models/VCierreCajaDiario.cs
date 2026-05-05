@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LaRicaNoche.Api.Models;
+namespace HotelGenericoApi.Models;
 
 public partial class VCierreCajaDiario
 {

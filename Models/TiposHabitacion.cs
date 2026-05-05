@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LaRicaNoche.Api.Models;
+namespace HotelGenericoApi.Models;
 
 public partial class TiposHabitacion
 {
@@ -16,4 +16,6 @@ public partial class TiposHabitacion
     public decimal? PrecioBase { get; set; }
 
     public virtual ICollection<Habitacione> Habitaciones { get; set; } = new List<Habitacione>();
+
+    public virtual ICollection<Tarifa> Tarifas { get; set; } = new List<Tarifa>();
 }

@@ -1,19 +1,19 @@
 using Microsoft.EntityFrameworkCore;
-using LaRicaNoche.Api.Data;
-using LaRicaNoche.Api.DTOs.Request;
-using LaRicaNoche.Api.DTOs.Response;
-using LaRicaNoche.Api.Mappings;
-using LaRicaNoche.Api.Services.Interfaces;
-using LaRicaNoche.Api.Models;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Mappings;
+using HotelGenericoApi.Services.Interfaces;
+using HotelGenericoApi.Models;
 
-namespace LaRicaNoche.Api.Services.Implementations;
+namespace HotelGenericoApi.Services.Implementations;
 
 public class ProductoService : IProductoService
 {
-    private readonly LaRicaNocheDbContext _db;
+    private readonly HotelGenericoDbContext _db;
     private readonly ProductoMapper _mapper;
 
-    public ProductoService(LaRicaNocheDbContext db, ProductoMapper mapper)
+    public ProductoService(HotelGenericoDbContext db, ProductoMapper mapper)
     {
         _db = db;
         _mapper = mapper;

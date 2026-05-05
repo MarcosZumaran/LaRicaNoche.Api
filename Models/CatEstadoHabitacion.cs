@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LaRicaNoche.Api.Models;
+namespace HotelGenericoApi.Models;
 
 public partial class CatEstadoHabitacion
 {
@@ -10,6 +10,14 @@ public partial class CatEstadoHabitacion
     public string Nombre { get; set; } = null!;
 
     public string? Descripcion { get; set; }
+
+    public bool PermiteCheckin { get; set; }
+
+    public bool PermiteCheckout { get; set; }
+
+    public bool EsEstadoFinal { get; set; }
+
+    public string? ColorUi { get; set; }
 
     public virtual ICollection<Habitacione> Habitaciones { get; set; } = new List<Habitacione>();
 }

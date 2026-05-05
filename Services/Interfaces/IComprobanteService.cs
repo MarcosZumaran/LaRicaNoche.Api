@@ -1,6 +1,6 @@
-using LaRicaNoche.Api.DTOs.Response;
+using HotelGenericoApi.DTOs.Response;
 
-namespace LaRicaNoche.Api.Services.Interfaces;
+namespace HotelGenericoApi.Services.Interfaces;
 
 public interface IComprobanteService
 {

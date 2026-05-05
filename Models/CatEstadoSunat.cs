@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LaRicaNoche.Api.Models;
+namespace HotelGenericoApi.Models;
 
 public partial class CatEstadoSunat
 {
@@ -10,6 +10,8 @@ public partial class CatEstadoSunat
     public string Descripcion { get; set; } = null!;
 
     public string? DescripcionLarga { get; set; }
+
+    public virtual ICollection<CierreCajaEnvio> CierreCajaEnvios { get; set; } = new List<CierreCajaEnvio>();
 
     public virtual ICollection<Comprobante> Comprobantes { get; set; } = new List<Comprobante>();
 }

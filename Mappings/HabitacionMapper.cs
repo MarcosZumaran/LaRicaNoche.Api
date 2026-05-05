@@ -1,8 +1,8 @@
-using LaRicaNoche.Api.Models;
-using LaRicaNoche.Api.DTOs.Request;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.DTOs.Request;
 using Riok.Mapperly.Abstractions;
 
-namespace LaRicaNoche.Api.Mappings;
+namespace HotelGenericoApi.Mappings;
 
 [Mapper]
 public partial class HabitacionMapper

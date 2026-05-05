@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using LaRicaNoche.Api.Data;
-using LaRicaNoche.Api.DTOs.Response;
-using LaRicaNoche.Api.Services.Interfaces;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Services.Interfaces;
 
-namespace LaRicaNoche.Api.Services.Implementations;
+namespace HotelGenericoApi.Services.Implementations;
 
 public class ReporteService : IReporteService
 {
-    private readonly LaRicaNocheDbContext _db;
+    private readonly HotelGenericoDbContext _db;
 
-    public ReporteService(LaRicaNocheDbContext db) => _db = db;
+    public ReporteService(HotelGenericoDbContext db) => _db = db;
 
     public async Task<IEnumerable<CierreCajaResponseDto>> GetCierreCajaAsync(DateOnly? fecha)
     {

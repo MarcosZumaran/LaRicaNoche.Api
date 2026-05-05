@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using LaRicaNoche.Api.Data;
-using LaRicaNoche.Api.DTOs.Response;
-using LaRicaNoche.Api.Services.Interfaces;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Services.Interfaces;
 
-namespace LaRicaNoche.Api.Services.Implementations;
+namespace HotelGenericoApi.Services.Implementations;
 
 public class ComprobanteService : IComprobanteService
 {
-    private readonly LaRicaNocheDbContext _db;
+    private readonly HotelGenericoDbContext _db;
 
-    public ComprobanteService(LaRicaNocheDbContext db) => _db = db;
+    public ComprobanteService(HotelGenericoDbContext db) => _db = db;
 
     public async Task<IEnumerable<ComprobanteResponseDto>> GetAllAsync()
     {

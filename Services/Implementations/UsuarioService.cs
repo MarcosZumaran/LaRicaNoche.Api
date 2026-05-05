@@ -4,22 +4,22 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using LaRicaNoche.Api.Data;
-using LaRicaNoche.Api.DTOs.Request;
-using LaRicaNoche.Api.DTOs.Response;
-using LaRicaNoche.Api.Mappings;
-using LaRicaNoche.Api.Services.Interfaces;
-using LaRicaNoche.Api.Models;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Mappings;
+using HotelGenericoApi.Services.Interfaces;
+using HotelGenericoApi.Models;
 
-namespace LaRicaNoche.Api.Services.Implementations;
+namespace HotelGenericoApi.Services.Implementations;
 
 public class UsuarioService : IUsuarioService
 {
-    private readonly LaRicaNocheDbContext _db;
+    private readonly HotelGenericoDbContext _db;
     private readonly UsuarioMapper _mapper;
     private readonly IConfiguration _configuration;
 
-    public UsuarioService(LaRicaNocheDbContext db, UsuarioMapper mapper, IConfiguration configuration)
+    public UsuarioService(HotelGenericoDbContext db, UsuarioMapper mapper, IConfiguration configuration)
     {
         _db = db;
         _mapper = mapper;

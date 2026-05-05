@@ -1,20 +1,19 @@
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace LaRicaNoche.Api.Models
+namespace HotelGenericoApi.Models;
+
+public partial class CierreCajaEnvio
 {
-    [Table("cierre_caja_envios")]
-    public partial class CierreCajaEnvio
-    {
-        [Key]
-        public DateOnly Fecha { get; set; }
-        public int? IdEstadoSunat { get; set; }
-        public DateTime? FechaEnvio { get; set; }
-        public int? IntentosEnvio { get; set; }
-        public string? HashXml { get; set; }
+    public DateOnly Fecha { get; set; }
 
-        [ForeignKey("IdEstadoSunat")]
-        public virtual CatEstadoSunat? IdEstadoSunatNavigation { get; set; }
-    }
+    public int? IdEstadoSunat { get; set; }
+
+    public DateTime? FechaEnvio { get; set; }
+
+    public int? IntentosEnvio { get; set; }
+
+    public string? HashXml { get; set; }
+
+    public virtual CatEstadoSunat? IdEstadoSunatNavigation { get; set; }
 }

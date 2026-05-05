@@ -1,7 +1,7 @@
-using LaRicaNoche.Api.DTOs.Request;
-using LaRicaNoche.Api.DTOs.Response;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
 
-namespace LaRicaNoche.Api.Services.Interfaces;
+namespace HotelGenericoApi.Services.Interfaces;
 
 public interface ICatAfectacionIgvService
 {

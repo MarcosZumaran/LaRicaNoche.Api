@@ -1,9 +1,9 @@
-using LaRicaNoche.Api.Models;
-using LaRicaNoche.Api.DTOs.Request;
-using LaRicaNoche.Api.DTOs.Response;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
 using Riok.Mapperly.Abstractions;
 
-namespace LaRicaNoche.Api.Mappings;
+namespace HotelGenericoApi.Mappings;
 
 [Mapper]
 public partial class CatEstadoSunatMapper

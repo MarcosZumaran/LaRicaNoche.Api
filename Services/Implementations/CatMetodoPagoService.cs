@@ -1,18 +1,18 @@
 using Microsoft.EntityFrameworkCore;
-using LaRicaNoche.Api.Data;
-using LaRicaNoche.Api.DTOs.Request;
-using LaRicaNoche.Api.DTOs.Response;
-using LaRicaNoche.Api.Mappings;
-using LaRicaNoche.Api.Services.Interfaces;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Mappings;
+using HotelGenericoApi.Services.Interfaces;
 
-namespace LaRicaNoche.Api.Services.Implementations;
+namespace HotelGenericoApi.Services.Implementations;
 
 public class CatMetodoPagoService : ICatMetodoPagoService
 {
-    private readonly LaRicaNocheDbContext _db;
+    private readonly HotelGenericoDbContext _db;
     private readonly CatMetodoPagoMapper _mapper;
 
-    public CatMetodoPagoService(LaRicaNocheDbContext db, CatMetodoPagoMapper mapper)
+    public CatMetodoPagoService(HotelGenericoDbContext db, CatMetodoPagoMapper mapper)
     {
         _db = db;
         _mapper = mapper;

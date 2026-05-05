@@ -1,17 +1,17 @@
-using LaRicaNoche.Api.Data;
+using HotelGenericoApi.Data;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using LaRicaNoche.Api.Services.Interfaces;
+using HotelGenericoApi.Services.Interfaces;
 
-namespace LaRicaNoche.Api.Services.Implementations;
+namespace HotelGenericoApi.Services.Implementations;
 
 public class PdfService : IPdfService
 {
-    private readonly LaRicaNocheDbContext _db;
+    private readonly HotelGenericoDbContext _db;
 
-    public PdfService(LaRicaNocheDbContext db)
+    public PdfService(HotelGenericoDbContext db)
     {
         _db = db;
         QuestPDF.Settings.License = LicenseType.Community;

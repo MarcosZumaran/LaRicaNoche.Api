@@ -1,4 +1,4 @@
-namespace LaRicaNoche.Api.Services.Interfaces;
+namespace HotelGenericoApi.Services.Interfaces;
 
 public interface IPdfService
 {

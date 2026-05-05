@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace LaRicaNoche.Api.DTOs.Request;
+namespace HotelGenericoApi.DTOs.Request;
 
 public sealed record LoginDto
 {

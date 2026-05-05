@@ -1,22 +1,22 @@
 using Microsoft.EntityFrameworkCore;
-using LaRicaNoche.Api.Data;
-using LaRicaNoche.Api.DTOs.Request;
-using LaRicaNoche.Api.DTOs.Response;
-using LaRicaNoche.Api.Models;
-using LaRicaNoche.Api.Services.Interfaces;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.Services.Interfaces;
 using NLua;
 
-namespace LaRicaNoche.Api.Services.Implementations;
+namespace HotelGenericoApi.Services.Implementations;
 
 public class EstanciaService : IEstanciaService
 {
-    private readonly LaRicaNocheDbContext _db;
+    private readonly HotelGenericoDbContext _db;
     private readonly ILuaService _lua;
 
     private const string ESTADO_ACTIVA = "Activa";
     private const string ESTADO_FINALIZADA = "Finalizada";
 
-    public EstanciaService(LaRicaNocheDbContext db, ILuaService lua)
+    public EstanciaService(HotelGenericoDbContext db, ILuaService lua)
     {
         _db = db;
         _lua = lua;

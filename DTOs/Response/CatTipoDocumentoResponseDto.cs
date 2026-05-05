@@ -1,4 +1,4 @@
-namespace LaRicaNoche.Api.DTOs.Response;
+namespace HotelGenericoApi.DTOs.Response;
 
 public sealed record CatTipoDocumentoResponseDto(
     string Codigo,

@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using LaRicaNoche.Api.Models;
+using HotelGenericoApi.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace LaRicaNoche.Api.Data;
+namespace HotelGenericoApi.Data;
 
-public partial class LaRicaNocheDbContext : DbContext
+public partial class HotelGenericoDbContext : DbContext
 {
-    public LaRicaNocheDbContext()
+    public HotelGenericoDbContext()
     {
     }
 
-    public LaRicaNocheDbContext(DbContextOptions<LaRicaNocheDbContext> options)
+    public HotelGenericoDbContext(DbContextOptions<HotelGenericoDbContext> options)
         : base(options)
     {
     }

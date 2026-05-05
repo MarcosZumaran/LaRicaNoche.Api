@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LaRicaNoche.Api.Models;
+namespace HotelGenericoApi.Models;
 
 public partial class Estancia
 {
@@ -32,4 +32,6 @@ public partial class Estancia
     public virtual Habitacione? IdHabitacionNavigation { get; set; }
 
     public virtual Reserva? IdReservaNavigation { get; set; }
+
+    public virtual ICollection<ItemsEstancium> ItemsEstancia { get; set; } = new List<ItemsEstancium>();
 }

@@ -1,18 +1,18 @@
 using Microsoft.EntityFrameworkCore;
-using LaRicaNoche.Api.Data;
-using LaRicaNoche.Api.DTOs.Request;
-using LaRicaNoche.Api.DTOs.Response;
-using LaRicaNoche.Api.Mappings;
-using LaRicaNoche.Api.Services.Interfaces;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Mappings;
+using HotelGenericoApi.Services.Interfaces;
 
-namespace LaRicaNoche.Api.Services.Implementations;
+namespace HotelGenericoApi.Services.Implementations;
 
 public class CatTipoComprobanteService : ICatTipoComprobanteService
 {
-    private readonly LaRicaNocheDbContext _db;
+    private readonly HotelGenericoDbContext _db;
     private readonly CatTipoComprobanteMapper _mapper;
 
-    public CatTipoComprobanteService(LaRicaNocheDbContext db, CatTipoComprobanteMapper mapper)
+    public CatTipoComprobanteService(HotelGenericoDbContext db, CatTipoComprobanteMapper mapper)
     {
         _db = db;
         _mapper = mapper;

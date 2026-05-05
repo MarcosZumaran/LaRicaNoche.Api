@@ -1,8 +1,8 @@
-# La Rica Noche API
+# Hotel Generico API
 
-API REST del sistema **La Rica Noche**, diseñada para administrar la lógica principal del alojamiento y servir de soporte al frontend web.
+API REST del sistema **Hotel Generico**, diseñada para administrar la lógica principal del alojamiento y servir de soporte al frontend web.
 
-Repositorio del frontend: https://github.com/MarcosZumaran/LaRicaNoche.Web
+Repositorio del frontend: https://github.com/MarcosZumaran/HotelGenerico.Web
 
 ---
 
@@ -54,8 +54,8 @@ Se encarga de:
 ## Instalación
 
 ```bash
-git clone https://github.com/MarcosZumaran/LaRicaNoche.Api.git
-cd LaRicaNoche.Api
+git clone https://github.com/MarcosZumaran/HotelGenericoApi.git
+cd HotelGenericoApi
 dotnet restore
 ```
 
@@ -70,7 +70,7 @@ Ejemplo:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=LaRicaNoche;Trusted_Connection=True;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=localhost;Database=HotelGenerico;Trusted_Connection=True;TrustServerCertificate=True;"
   }
 }
 ```
@@ -105,7 +105,7 @@ Los módulos principales del sistema incluyen rutas orientadas a:
 ## Estructura general
 
 ```text
-LaRicaNoche.Api/
+HotelGenericoApi/
 ├── Controllers/
 ├── Services/
 ├── Repositories/
@@ -123,7 +123,7 @@ LaRicaNoche.Api/
 Esta API fue creada para trabajar junto con la interfaz web del sistema.
 
 Frontend del proyecto:  
-https://github.com/MarcosZumaran/LaRicaNoche.Web
+https://github.com/MarcosZumaran/HotelGenerico.Web
 
 Flujo general:
 
@@ -146,4 +146,4 @@ Frontend -> API -> Base de datos
 MarcosZumaran
 
 Repositorio:  
-https://github.com/MarcosZumaran/LaRicaNoche.Api
+https://github.com/MarcosZumaran/HotelGenericoApi

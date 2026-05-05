@@ -1,16 +1,16 @@
 using Microsoft.EntityFrameworkCore;
-using LaRicaNoche.Api.Data;
-using LaRicaNoche.Api.DTOs.Response;
-using LaRicaNoche.Api.Models;
-using LaRicaNoche.Api.Services.Interfaces;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.Services.Interfaces;
 
-namespace LaRicaNoche.Api.Services.Implementations
+namespace HotelGenericoApi.Services.Implementations
 {
     public class CierreCajaEnvioService : ICierreCajaEnvioService
     {
-        private readonly LaRicaNocheDbContext _db;
+        private readonly HotelGenericoDbContext _db;
 
-        public CierreCajaEnvioService(LaRicaNocheDbContext db)
+        public CierreCajaEnvioService(HotelGenericoDbContext db)
         {
             _db = db;
         }
