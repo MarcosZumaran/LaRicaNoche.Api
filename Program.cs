@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
-using GenericHotelApi.Api.Mappings;
-using GenericHotelApi.Api.Data;
-using GenericHotelApi.Api.Services.Interfaces;
-using GenericHotelApi.Api.Services.Implementations;
+using HotelGenericoApi.Mappings;
+using HotelGenericoApi.Data;
+using HotelGenericoApi.Services.Interfaces;
+using HotelGenericoApi.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -11,7 +11,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // DbContext
-builder.Services.AddDbContext<GenericHotelApiDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<HotelDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // NLua
 builder.Services.AddSingleton<ILuaService, LuaService>();
