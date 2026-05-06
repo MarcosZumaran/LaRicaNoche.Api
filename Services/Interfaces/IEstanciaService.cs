@@ -10,4 +10,6 @@ public interface IEstanciaService
     Task<EstanciaResponseDto> CheckInAsync(CheckInDto dto, int? idUsuario);
     Task<EstanciaResponseDto> CheckOutAsync(int idEstancia, int? idUsuario);
     Task<EstanciaResponseDto> RegistrarConsumoAsync(int idEstancia, ConsumoEstanciaCreateDto dto, int? idUsuario);
+    Task<ReservaResponseDto> CrearReservaAsync(ReservaCreateDto dto, int? idUsuario);
+    Task<ReservaResponseDto?> GetReservaByIdAsync(int id);
 }

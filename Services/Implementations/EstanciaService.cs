@@ -304,6 +304,136 @@ namespace HotelGenericoApi.Services.Implementations
 
             return MapToResponse(estancia);
         }
+
+        public async Task<ReservaResponseDto> CrearReservaAsync(ReservaCreateDto dto, int? idUsuario)
+        {
+            // Verificar que la habitación esté disponible para reserva (permite_checkin = true)
+            var habitacion = await _db.Habitaciones
+                .Include(h => h.IdEstadoNavigation)
+                .Include(h => h.IdTipoNavigation)
+                .FirstOrDefaultAsync(h => h.IdHabitacion == dto.IdHabitacion);
+
+            if (habitacion is null) throw new InvalidOperationException("La habitación no existe.");
+
+            if (habitacion.IdEstadoNavigation == null || !habitacion.IdEstadoNavigation.PermiteCheckin) throw new InvalidOperationException("La habitación no está disponible para reserva.");
+
+            // Obtener o crear cliente
+            Cliente cliente;
+            if (dto.UsarClienteAnonimo)
+            {
+                cliente = await _db.Clientes
+                    .FirstOrDefaultAsync(c => c.TipoDocumento == "0" && c.Documento == "00000000")
+                    ?? throw new InvalidOperationException("Cliente anónimo no configurado en el sistema.");
+            }
+            else
+            {
+                cliente = await _db.Clientes
+                    .FirstOrDefaultAsync(c => c.TipoDocumento == dto.TipoDocumento && c.Documento == dto.Documento);
+
+                if (cliente is null)
+                {
+                    cliente = new Cliente
+                    {
+                        TipoDocumento = dto.TipoDocumento,
+                        Documento = dto.Documento,
+                        Nombres = dto.Nombres,
+                        Apellidos = dto.Apellidos,
+                        Telefono = dto.Telefono,
+                        FechaRegistro = DateTime.UtcNow
+                    };
+                    _db.Clientes.Add(cliente);
+                    await _db.SaveChangesAsync();
+                }
+            }
+
+            // Calcular noches y monto
+            int noches = (int)(dto.FechaSalidaPrevista.Date - dto.FechaEntradaPrevista.Date).TotalDays;
+            if (noches < 1) noches = 1;
+
+            var tarifa = await _db.Tarifas
+                .Where(t => t.IdTipoHabitacion == habitacion.IdTipo &&
+                    (t.FechaInicio == null || t.FechaInicio <= DateOnly.FromDateTime(dto.FechaEntradaPrevista)) &&
+                    (t.FechaFin == null || t.FechaFin >= DateOnly.FromDateTime(dto.FechaEntradaPrevista)))
+                .OrderByDescending(t => t.IdTemporadaNavigation != null ? t.IdTemporadaNavigation.Multiplier : 1)
+                .FirstOrDefaultAsync();
+
+            decimal precioNoche = tarifa?.Precio ?? habitacion.PrecioNoche;
+            decimal montoSinIgv = precioNoche * noches;
+
+            var configuracion = await _db.ConfiguracionHotels.FirstOrDefaultAsync();
+            decimal tasaDefecto = configuracion?.TasaIgvHotel ?? 10.5m;
+            decimal tasaIgv = tasaDefecto;
+            decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
+            try
+            {
+                var resultado = _lua.CallFunction("hotel_tax_rules.lua", "calculate_igv_hotel",
+                    "10", montoSinIgv, "03");
+
+                if (resultado.Length > 0 && resultado[0] is LuaTable tabla)
+                {
+                    tasaIgv = Convert.ToDecimal(tabla["tasa"]);
+                    igvCalculado = Convert.ToDecimal(tabla["monto"]);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error al llamar al script Lua: " + ex.Message);
+                throw new InvalidOperationException("Error al calcular el IGV: " + ex.Message);
+            }
+
+            decimal montoTotal = montoSinIgv + igvCalculado;
+
+            // Crear la reserva (sin cambiar el estado de la habitación)
+            var reserva = new Reserva
+            {
+                IdHabitacion = dto.IdHabitacion,
+                IdCliente = cliente.IdCliente,
+                IdUsuario = idUsuario,
+                FechaRegistro = DateTime.UtcNow,
+                FechaEntradaPrevista = dto.FechaEntradaPrevista,
+                FechaSalidaPrevista = dto.FechaSalidaPrevista,
+                MontoTotal = montoTotal,
+                Estado = "Confirmada",
+                Observaciones = $"Reserva creada para {noches} noche(s)."
+            };
+            _db.Reservas.Add(reserva);
+            await _db.SaveChangesAsync();
+
+            return new ReservaResponseDto(
+                reserva.IdReserva,
+                reserva.IdHabitacion ?? 0,
+                habitacion.NumeroHabitacion,
+                $"{cliente.Nombres} {cliente.Apellidos}",
+                reserva.FechaEntradaPrevista,
+                reserva.FechaSalidaPrevista,
+                reserva.MontoTotal,
+                reserva.Estado ?? "Confirmada"
+            );
+        }
+
+        public async Task<ReservaResponseDto?> GetReservaByIdAsync(int id)
+        {
+            var reserva = await _db.Reservas
+                .Include(r => r.IdHabitacionNavigation)
+                .Include(r => r.IdClienteNavigation)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.IdReserva == id);
+
+            if (reserva is null) return null;
+
+            return new ReservaResponseDto(
+                reserva.IdReserva,
+                reserva.IdHabitacion ?? 0,
+                reserva.IdHabitacionNavigation?.NumeroHabitacion,
+                reserva.IdClienteNavigation is not null
+                    ? $"{reserva.IdClienteNavigation.Nombres} {reserva.IdClienteNavigation.Apellidos}"
+                    : null,
+                reserva.FechaEntradaPrevista,
+                reserva.FechaSalidaPrevista,
+                reserva.MontoTotal,
+                reserva.Estado ?? "Desconocido"
+            );
+        }
     }
 
 }

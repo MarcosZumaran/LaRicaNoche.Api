@@ -82,4 +82,33 @@ public class EstanciaController : ControllerBase
             return BadRequest(new { mensaje = ex.Message });
         }
     }
+
+    [HttpPost("reserva")]
+    public async Task<IActionResult> CrearReserva(ReservaCreateDto dto)
+    {
+        try
+        {
+            var idUsuario = ObtenerIdUsuario();
+            var result = await _service.CrearReservaAsync(dto, idUsuario);
+            return CreatedAtAction(nameof(GetReservaById), new { id = result.IdReserva }, result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+
+    [HttpGet("reserva/{id}")]
+    public async Task<IActionResult> GetReservaById(int id)
+    {
+        try
+        {
+            var result = await _service.GetReservaByIdAsync(id);
+            return result is not null ? Ok(result) : NotFound(new { mensaje = "Reserva no encontrada." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
 }
