@@ -94,6 +94,9 @@ public class EstanciaController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            // Si es un conflicto de solapamiento, devolver 409 Conflict
+            if (ex.Message.Contains("ya está reservada") || ex.Message.Contains("solap"))
+                return Conflict(new { mensaje = ex.Message });
             return BadRequest(new { mensaje = ex.Message });
         }
     }
