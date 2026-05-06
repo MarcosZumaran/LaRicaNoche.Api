@@ -112,7 +112,7 @@ namespace HotelGenericoApi.Services.Implementations
             decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
             try
             {
-                var resultado = _lua.CallFunction("hotel_tax_rules.lua", "calculate_igv_hotel",
+                var resultado = _lua.CallFunction("hotel_tax_rules.lua", "Calculate_igv_hotel",
                     "10", montoSinIgv, "03");
 
                 if (resultado.Length > 0 && resultado[0] is LuaTable tabla)
@@ -366,7 +366,7 @@ namespace HotelGenericoApi.Services.Implementations
             decimal igvCalculado = montoSinIgv * (tasaIgv / 100);
             try
             {
-                var resultado = _lua.CallFunction("hotel_tax_rules.lua", "calculate_igv_hotel",
+                var resultado = _lua.CallFunction("hotel_tax_rules.lua", "Calculate_igv_hotel",
                     "10", montoSinIgv, "03");
 
                 if (resultado.Length > 0 && resultado[0] is LuaTable tabla)
