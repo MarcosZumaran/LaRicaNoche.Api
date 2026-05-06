@@ -114,4 +114,18 @@ public class EstanciaController : ControllerBase
             return BadRequest(new { mensaje = ex.Message });
         }
     }
+
+    [HttpGet("reservas/{idHabitacion}")]
+    public async Task<IActionResult> GetReservasPorHabitacion(int idHabitacion)
+    {
+        try
+        {
+            var result = await _service.GetReservasPorHabitacionAsync(idHabitacion);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
 }

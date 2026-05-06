@@ -484,6 +484,25 @@ namespace HotelGenericoApi.Services.Implementations
                 reserva.Estado ?? "Desconocido"
             );
         }
+        public async Task<IEnumerable<ReservaResponseDto>> GetReservasPorHabitacionAsync(int idHabitacion)
+        {
+            return await _db.Reservas
+                .Where(r => r.IdHabitacion == idHabitacion)
+                .Include(r => r.IdHabitacionNavigation)
+                .Include(r => r.IdClienteNavigation)
+                .AsNoTracking()
+                .Select(r => new ReservaResponseDto(
+                    r.IdReserva,
+                    r.IdHabitacion ?? 0,
+                    r.IdHabitacionNavigation != null ? r.IdHabitacionNavigation.NumeroHabitacion : null,
+                    r.IdClienteNavigation != null ? $"{r.IdClienteNavigation.Nombres} {r.IdClienteNavigation.Apellidos}" : null,
+                    r.FechaEntradaPrevista,
+                    r.FechaSalidaPrevista,
+                    r.MontoTotal,
+                    r.Estado ?? "Pendiente"
+                ))
+                .ToListAsync();
+        }
     }
 
 }

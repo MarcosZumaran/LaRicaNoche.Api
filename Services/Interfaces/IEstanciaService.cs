@@ -12,4 +12,5 @@ public interface IEstanciaService
     Task<EstanciaResponseDto> RegistrarConsumoAsync(int idEstancia, ConsumoEstanciaCreateDto dto, int? idUsuario);
     Task<ReservaResponseDto> CrearReservaAsync(ReservaCreateDto dto, int? idUsuario);
     Task<ReservaResponseDto?> GetReservaByIdAsync(int id);
+    Task<IEnumerable<ReservaResponseDto>> GetReservasPorHabitacionAsync(int idHabitacion);
 }
