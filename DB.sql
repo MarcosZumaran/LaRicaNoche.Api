@@ -380,4 +380,21 @@ INNER JOIN cat_estado_habitacion e ON h.id_estado = e.id_estado
 INNER JOIN tipos_habitacion th ON h.id_tipo = th.id_tipo;
 GO
 
+-- Tabla de transiciones permitidas entre estados de habitación
+CREATE TABLE cat_transicion_estado (
+    id_transicion INT PRIMARY KEY IDENTITY(1,1),
+    id_estado_actual INT NOT NULL FOREIGN KEY REFERENCES cat_estado_habitacion(id_estado),
+    id_estado_siguiente INT NOT NULL FOREIGN KEY REFERENCES cat_estado_habitacion(id_estado),
+    UNIQUE(id_estado_actual, id_estado_siguiente)
+);
+
+-- Sembrar transiciones por defecto
+-- (1=Disponible, 2=Ocupada, 3=Limpieza, 4=Mantenimiento)
+INSERT INTO cat_transicion_estado (id_estado_actual, id_estado_siguiente) VALUES
+(1, 2), -- Disponible -> Ocupada
+(2, 3), -- Ocupada -> Limpieza
+(3, 1), -- Limpieza -> Disponible
+(1, 4), -- Disponible -> Mantenimiento
+(4, 1); -- Mantenimiento -> Disponible
+
 PRINT 'Base de datos HotelDB creada exitosamente.';

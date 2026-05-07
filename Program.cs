@@ -50,9 +50,12 @@ builder.Services.AddScoped<IVentaService, VentaService>();
 builder.Services.AddScoped<ICierreCajaEnvioService, CierreCajaEnvioService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IConfiguracionHotelService, ConfiguracionHotelService>();
+builder.Services.AddScoped<IValidadorEstadoService, ValidadorEstadoService>();
 
 // Setup de inicio si no hay un usuario admin
 builder.Services.AddScoped<SetupService>();
+
+builder.Services.AddScoped<IDbTransactionManager, SqlServerTransactionManager>();
 
 // Configuración JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");

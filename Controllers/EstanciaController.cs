@@ -142,4 +142,34 @@ public class EstanciaController : ControllerBase
             return BadRequest(new { mensaje = ex.Message });
         }
     }
+
+    [HttpPut("{idEstancia}/consumo/{idItem}")]
+    public async Task<IActionResult> ActualizarConsumo(int idEstancia, int idItem, [FromBody] ActualizarConsumoDto dto)
+    {
+        try
+        {
+            var idUsuario = ObtenerIdUsuario();
+            await _service.ActualizarConsumoAsync(idEstancia, idItem, dto.Cantidad, idUsuario);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+
+    [HttpDelete("{idEstancia}/consumo/{idItem}")]
+    public async Task<IActionResult> EliminarConsumo(int idEstancia, int idItem)
+    {
+        try
+        {
+            var idUsuario = ObtenerIdUsuario();
+            await _service.EliminarConsumoAsync(idEstancia, idItem, idUsuario);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
 }

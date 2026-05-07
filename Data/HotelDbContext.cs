@@ -70,8 +70,13 @@ public partial class HotelDbContext : DbContext
 
     public virtual DbSet<Venta> Ventas { get; set; }
 
+    public virtual DbSet<CatTransicionEstado> CatTransicionEstados { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Name=DefaultConnection");
+    {
+        if (!optionsBuilder.IsConfigured)
+            optionsBuilder.UseSqlServer("Name=DefaultConnection");
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -862,6 +867,17 @@ public partial class HotelDbContext : DbContext
                 .HasForeignKey(d => d.MetodoPago)
                 .HasConstraintName("FK__ventas__metodo_p__17036CC0");
         });
+
+        modelBuilder.Entity<CatTransicionEstado>(entity =>
+            {
+                entity.HasKey(e => e.IdTransicion).HasName("PK_cat_transicion_estado");
+                entity.ToTable("cat_transicion_estado");
+                entity.Property(e => e.IdTransicion).HasColumnName("id_transicion");
+                entity.Property(e => e.IdEstadoActual).HasColumnName("id_estado_actual");
+                entity.Property(e => e.IdEstadoSiguiente).HasColumnName("id_estado_siguiente");
+                entity.HasOne(d => d.IdEstadoActualNavigation).WithMany().HasForeignKey(d => d.IdEstadoActual).HasConstraintName("FK_cat_transicion_estado_actual");
+                entity.HasOne(d => d.IdEstadoSiguienteNavigation).WithMany().HasForeignKey(d => d.IdEstadoSiguiente).HasConstraintName("FK_cat_transicion_estado_siguiente");
+            });
 
         OnModelCreatingPartial(modelBuilder);
     }

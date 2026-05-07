@@ -12,11 +12,13 @@ namespace HotelGenericoApi.Services.Implementations
     {
         private readonly HotelDbContext _db;
         private readonly HabitacionMapper _mapper;
+        private readonly IValidadorEstadoService _validadorEstadoService;
 
-        public HabitacionService(HotelDbContext db, HabitacionMapper mapper)
+        public HabitacionService(HotelDbContext db, HabitacionMapper mapper, IValidadorEstadoService validadorEstadoService)
         {
             _db = db;
             _mapper = mapper;
+            _validadorEstadoService = validadorEstadoService;
         }
 
         public async Task<IEnumerable<HabitacionResponseDto>> GetAllAsync()
@@ -65,6 +67,14 @@ namespace HotelGenericoApi.Services.Implementations
             if (entity is null) return false;
 
             int? estadoAnterior = entity.IdEstado;
+
+            // Validar transición si se está cambiando el estado
+            if (dto.IdEstado.HasValue)
+            {
+                bool permitida = await _validadorEstadoService.EsTransicionValidaAsync(estadoAnterior ?? 0, dto.IdEstado.Value);
+                if (!permitida)
+                    throw new InvalidOperationException("Transición de estado no permitida.");
+            }
 
             if (dto.Piso.HasValue) entity.Piso = dto.Piso.Value;
             if (dto.Descripcion != null) entity.Descripcion = dto.Descripcion;

@@ -1,6 +1,8 @@
 using NLua;
 using System.Collections.Concurrent;
 
+namespace HotelGenericoApi.Services.Implementations;
+
 public class LuaService : ILuaService
 {
     private readonly Lua _lua;
@@ -10,11 +12,10 @@ public class LuaService : ILuaService
     public LuaService(IConfiguration configuration)
     {
         _lua = new Lua();
-        _lua.LoadCLRPackage(); // Permite cargar ensamblados de .NET, probablemente lo desabilite en un futuro, porque puede que no los use
+        _lua.LoadCLRPackage();
         _scriptPath = configuration["LuaScriptsPath"] ?? "Scripts";
     }
 
-    /// Carga un script solo una vez y lo mantiene en el entorno Lua.
     private void EnsureScriptLoaded(string scriptName)
     {
         if (!_loadedScripts.ContainsKey(scriptName))
