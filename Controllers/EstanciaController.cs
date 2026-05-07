@@ -128,4 +128,18 @@ public class EstanciaController : ControllerBase
             return BadRequest(new { mensaje = ex.Message });
         }
     }
+
+    [HttpGet("{id}/consumos")]
+    public async Task<IActionResult> GetConsumos(int id)
+    {
+        try
+        {
+            var result = await _service.GetConsumosAsync(id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
 }

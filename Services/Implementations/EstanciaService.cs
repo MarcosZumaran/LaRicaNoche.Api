@@ -503,6 +503,24 @@ namespace HotelGenericoApi.Services.Implementations
                 ))
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<ItemConsumoResponseDto>> GetConsumosAsync(int idEstancia)
+        {
+            return await _db.ItemsEstancia
+                .Where(i => i.IdEstancia == idEstancia)
+                .Include(i => i.IdProductoNavigation)
+                .OrderByDescending(i => i.FechaRegistro)
+                .Select(i => new ItemConsumoResponseDto(
+                    i.IdItem,
+                    i.IdProducto,
+                    i.IdProductoNavigation != null ? i.IdProductoNavigation.Nombre : "",
+                    i.Cantidad,
+                    i.PrecioUnitario,
+                    i.Subtotal ?? 0,
+                    i.FechaRegistro
+                ))
+                .ToListAsync();
+        }
     }
 
 }
