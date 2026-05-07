@@ -5,6 +5,8 @@ using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Mappings;
 using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Models;
+using HotelGenericoApi.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HotelGenericoApi.Services.Implementations
 {
@@ -13,12 +15,14 @@ namespace HotelGenericoApi.Services.Implementations
         private readonly HotelDbContext _db;
         private readonly HabitacionMapper _mapper;
         private readonly IValidadorEstadoService _validadorEstadoService;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<HabitacionHub> _hubContext;
 
-        public HabitacionService(HotelDbContext db, HabitacionMapper mapper, IValidadorEstadoService validadorEstadoService)
+        public HabitacionService(HotelDbContext db, HabitacionMapper mapper, IValidadorEstadoService validador, Microsoft.AspNetCore.SignalR.IHubContext<HabitacionHub> hubContext)
         {
             _db = db;
             _mapper = mapper;
-            _validadorEstadoService = validadorEstadoService;
+            _validadorEstadoService = validador;
+            _hubContext = hubContext;
         }
 
         public async Task<IEnumerable<HabitacionResponseDto>> GetAllAsync()
@@ -54,6 +58,14 @@ namespace HotelGenericoApi.Services.Implementations
 
             _db.Habitaciones.Add(entity);
             await _db.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+            {
+                entity.IdHabitacion,
+                entity.NumeroHabitacion,
+                entity.IdEstado,
+                entity.FechaUltimoCambio
+            });
 
             await _db.Entry(entity).Reference(h => h.IdTipoNavigation).LoadAsync();
             await _db.Entry(entity).Reference(h => h.IdEstadoNavigation).LoadAsync();
@@ -100,6 +112,15 @@ namespace HotelGenericoApi.Services.Implementations
             entity.UsuarioCambio = idUsuario;
 
             await _db.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+            {
+                IdHabitacion = id,
+                entity.NumeroHabitacion,
+                IdEstado = entity.IdEstado,
+                entity.FechaUltimoCambio
+            });
+
             return true;
         }
 
@@ -114,6 +135,15 @@ namespace HotelGenericoApi.Services.Implementations
 
             _db.Habitaciones.Remove(entity);
             await _db.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+            {
+                IdHabitacion = id,
+                NumeroHabitacion = "",
+                IdEstado = -1, // Esto indica que la habitación fue eliminada
+                FechaUltimoCambio = DateTime.UtcNow
+            });
+
             return true;
         }
 

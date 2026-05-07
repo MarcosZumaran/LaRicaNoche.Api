@@ -5,6 +5,8 @@ using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 using NLua;
+using HotelGenericoApi.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HotelGenericoApi.Services.Implementations
 {
@@ -14,6 +16,7 @@ namespace HotelGenericoApi.Services.Implementations
         private readonly ILuaService _lua;
         private readonly IDbTransactionManager _transactionManager;
         private readonly IValidadorEstadoService _validador;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<HabitacionHub> _hubContext;
 
         private const string ESTADO_ACTIVA = "Activa";
         private const string ESTADO_FINALIZADA = "Finalizada";
@@ -25,17 +28,19 @@ namespace HotelGenericoApi.Services.Implementations
             HotelDbContext db,
             ILuaService lua,
             IDbTransactionManager transactionManager,
-            IValidadorEstadoService validador)
+            IValidadorEstadoService validador,
+            Microsoft.AspNetCore.SignalR.IHubContext<HabitacionHub> hubContext
+        )
         {
             _db = db;
             _lua = lua;
             _transactionManager = transactionManager;
             _validador = validador;
+            _hubContext = hubContext;
         }
 
         // Constructor simplificado que usa las implementaciones reales
-        public EstanciaService(HotelDbContext db, ILuaService lua)
-            : this(db, lua, new SqlServerTransactionManager(db), new ValidadorEstadoService(db))
+        public EstanciaService(HotelDbContext db, ILuaService lua) : this(db, lua, new SqlServerTransactionManager(db), new ValidadorEstadoService(db), null!)
         {
         }
 
@@ -179,6 +184,14 @@ namespace HotelGenericoApi.Services.Implementations
 
             await _db.SaveChangesAsync();
 
+            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+            {
+                habitacion.IdHabitacion,
+                habitacion.NumeroHabitacion,
+                IdEstado = estadoOcupada.IdEstado,
+                habitacion.FechaUltimoCambio
+            });
+
             var comprobante = new Comprobante
             {
                 IdEstancia = estancia.IdEstancia,
@@ -239,6 +252,15 @@ namespace HotelGenericoApi.Services.Implementations
             }
 
             await _db.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+            {
+                estancia.IdHabitacionNavigation.IdHabitacion,
+                estancia.IdHabitacionNavigation.NumeroHabitacion,
+                IdEstado = estadoLimpieza.IdEstado,
+                estancia.IdHabitacionNavigation.FechaUltimoCambio
+            });
+
             await _db.Entry(estancia).Reference(e => e.IdHabitacionNavigation).LoadAsync();
             await _db.Entry(estancia).Reference(e => e.IdClienteTitularNavigation).LoadAsync();
             return MapToResponse(estancia);

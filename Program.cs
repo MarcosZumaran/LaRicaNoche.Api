@@ -7,6 +7,7 @@ using HotelGenericoApi.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using HotelGenericoApi.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,6 +56,7 @@ builder.Services.AddScoped<IValidadorEstadoService, ValidadorEstadoService>();
 // Setup de inicio si no hay un usuario admin
 builder.Services.AddScoped<SetupService>();
 
+// Transacciones
 builder.Services.AddScoped<IDbTransactionManager, SqlServerTransactionManager>();
 
 // Configuración JWT
@@ -87,11 +89,15 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:5173")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
 builder.Services.AddAuthorization();
+
+// SignalR
+builder.Services.AddSignalR();
 
 //  Controladores y OpenAPI
 builder.Services.AddControllers();
@@ -108,6 +114,8 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHub<HabitacionHub>("/hub/habitaciones");
 app.MapControllers();
 
 app.Run();
