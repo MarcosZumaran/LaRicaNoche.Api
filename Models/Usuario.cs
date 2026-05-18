@@ -26,4 +26,9 @@ public partial class Usuario
     public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
 
     public virtual ICollection<Venta> Ventas { get; set; } = new List<Venta>();
+
+    /// <summary>
+    /// Indica si el usuario debe cambiar su contraseña en el próximo inicio de sesión.
+    /// </summary>
+    public bool DebeCambiarPassword { get; set; } = true;
 }
