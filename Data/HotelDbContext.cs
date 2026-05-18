@@ -1,102 +1,374 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
 using HotelGenericoApi.Models;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HotelGenericoApi.Data;
 
-public partial class HotelDbContext : DbContext
+public class HotelDbContext : DbContext
 {
-    public HotelDbContext()
-    {
-    }
+    public HotelDbContext(DbContextOptions<HotelDbContext> options) : base(options) { }
 
-    public HotelDbContext(DbContextOptions<HotelDbContext> options)
-        : base(options)
-    {
-    }
+    // Tablas
+    public DbSet<Configuracion> Configuraciones => Set<Configuracion>();
+    public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
+    public DbSet<MetodoPago> MetodosPago => Set<MetodoPago>();
+    public DbSet<TipoComprobante> TiposComprobante => Set<TipoComprobante>();
+    public DbSet<AfectacionIgv> AfectacionesIgv => Set<AfectacionIgv>();
+    public DbSet<CategoriaProducto> CategoriasProducto => Set<CategoriaProducto>();
+    public DbSet<EstadoHabitacion> EstadosHabitacion => Set<EstadoHabitacion>();
+    public DbSet<RolUsuario> RolesUsuario => Set<RolUsuario>();
+    public DbSet<EstadoSunat> EstadosSunat => Set<EstadoSunat>();
+    public DbSet<Temporada> Temporadas => Set<Temporada>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<Cliente> Clientes => Set<Cliente>();
+    public DbSet<TipoHabitacion> TiposHabitacion => Set<TipoHabitacion>();
+    public DbSet<Tarifa> Tarifas => Set<Tarifa>();
+    public DbSet<Habitacion> Habitaciones => Set<Habitacion>();
+    public DbSet<HistorialEstadoHabitacion> HistorialEstadoHabitaciones => Set<HistorialEstadoHabitacion>();
+    public DbSet<TransicionEstado> TransicionesEstado => Set<TransicionEstado>();
+    public DbSet<Reserva> Reservas => Set<Reserva>();
+    public DbSet<Estancia> Estancias => Set<Estancia>();
+    public DbSet<Huesped> Huespedes => Set<Huesped>();
+    public DbSet<Producto> Productos => Set<Producto>();
+    public DbSet<ItemEstancia> ItemsEstancia => Set<ItemEstancia>();
+    public DbSet<Venta> Ventas => Set<Venta>();
+    public DbSet<ItemVenta> ItemsVenta => Set<ItemVenta>();
+    public DbSet<Comprobante> Comprobantes => Set<Comprobante>();
+    public DbSet<CierreCajaEnvio> CierresCajaEnvio => Set<CierreCajaEnvio>();
+    public DbSet<LoginAttempt> LoginAttempts => Set<LoginAttempt>();
 
-    public virtual DbSet<AfectacionIgv> AfectacionIgvs { get; set; }
-    public virtual DbSet<CategoriaProducto> CategoriaProductos { get; set; }
-    public virtual DbSet<CierreCajaEnvio> CierreCajaEnvios { get; set; }
-    public virtual DbSet<Cliente> Clientes { get; set; }
-    public virtual DbSet<Comprobante> Comprobantes { get; set; }
-    public virtual DbSet<Configuracion> Configuracion { get; set; }
-    public virtual DbSet<EstadoHabitacion> EstadosHabitacion { get; set; }
-    public virtual DbSet<EstadoSunat> EstadosSunat { get; set; }
-    public virtual DbSet<Estancium> Estancias { get; set; }
-    public virtual DbSet<Habitacion> Habitaciones { get; set; }
-    public virtual DbSet<HistorialEstadoHabitacion> HistorialesEstadoHabitacion { get; set; }
-    public virtual DbSet<Huesped> Huespedes { get; set; }
-    public virtual DbSet<ItemEstancium> ItemsEstancia { get; set; }
-    public virtual DbSet<ItemVenta> ItemsVenta { get; set; }
-    public virtual DbSet<MetodoPago> MetodosPago { get; set; }
-    public virtual DbSet<Producto> Productos { get; set; }
-    public virtual DbSet<Reserva> Reservas { get; set; }
-    public virtual DbSet<RolUsuario> RolesUsuario { get; set; }
-    public virtual DbSet<Tarifa> Tarifas { get; set; }
-    public virtual DbSet<Temporada> Temporadas { get; set; }
-    public virtual DbSet<TipoComprobante> TiposComprobante { get; set; }
-    public virtual DbSet<TipoDocumento> TiposDocumento { get; set; }
-    public virtual DbSet<TipoHabitacion> TiposHabitacion { get; set; }
-    public virtual DbSet<TransicionEstado> TransicionesEstado { get; set; }
-    public virtual DbSet<Usuario> Usuarios { get; set; }
-    public virtual DbSet<VCierreCajaDiario> VCierreCajaDiarios { get; set; }
-    public virtual DbSet<VEstadoHabitacione> VEstadosHabitaciones { get; set; }
-    public virtual DbSet<VOcupacionDiarium> VOcupacionDiaria { get; set; }
-    public virtual DbSet<Venta> Ventas { get; set; }
-    public virtual DbSet<LoginAttempt> LoginAttempts { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-            optionsBuilder.UseSqlServer("Name=DefaultConnection")
-                .UseSnakeCaseNamingConvention();
-    }
+    // Vistas keyless
+    public DbSet<VCierreCajaDiario> VCierreCajaDiario => Set<VCierreCajaDiario>();
+    public DbSet<VEstadoHabitacion> VEstadoHabitacion => Set<VEstadoHabitacion>();
+    public DbSet<VOcupacionDiaria> VOcupacionDiaria => Set<VOcupacionDiaria>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Evitar múltiples rutas en cascada en SQL Server
+        foreach (var fk in modelBuilder.Model.GetEntityTypes()
+            .SelectMany(e => e.GetForeignKeys()))
+        {
+            fk.DeleteBehavior = DeleteBehavior.NoAction;
+        }
+
+        // --- Configuración de cada tabla con Fluent API ---
+
+        modelBuilder.Entity<Configuracion>(entity =>
+        {
+            entity.ToTable("configuracion");
+            entity.HasKey(e => e.IdConfiguracion);
+            entity.Property(e => e.IdConfiguracion).HasColumnName("id_configuracion").HasDefaultValue(1);
+            entity.Property(e => e.Nombre).HasColumnName("nombre").IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Direccion).HasColumnName("direccion").HasMaxLength(200);
+            entity.Property(e => e.Telefono).HasColumnName("telefono").HasMaxLength(20);
+            entity.Property(e => e.Ruc).HasColumnName("ruc").HasMaxLength(11);
+            entity.Property(e => e.TasaIgvHotel).HasColumnName("tasa_igv_hotel").HasColumnType("decimal(5,2)").HasDefaultValue(18.00m);
+            entity.Property(e => e.TasaIgvProductos).HasColumnName("tasa_igv_productos").HasColumnType("decimal(5,2)").HasDefaultValue(18.00m);
+        });
+
+        modelBuilder.Entity<TipoDocumento>(entity =>
+        {
+            entity.ToTable("tipo_documento");
+            entity.HasKey(e => e.Codigo);
+            entity.Property(e => e.Codigo).HasColumnName("codigo").HasColumnType("char(1)");
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").IsRequired().HasMaxLength(60);
+        });
+
+        modelBuilder.Entity<MetodoPago>(entity =>
+        {
+            entity.ToTable("metodo_pago");
+            entity.HasKey(e => e.Codigo);
+            entity.Property(e => e.Codigo).HasColumnName("codigo").HasColumnType("char(3)");
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").IsRequired().HasMaxLength(60);
+        });
+
+        modelBuilder.Entity<TipoComprobante>(entity =>
+        {
+            entity.ToTable("tipo_comprobante");
+            entity.HasKey(e => e.Codigo);
+            entity.Property(e => e.Codigo).HasColumnName("codigo").HasColumnType("char(2)");
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").IsRequired().HasMaxLength(60);
+        });
+
         modelBuilder.Entity<AfectacionIgv>(entity =>
         {
             entity.ToTable("afectacion_igv");
             entity.HasKey(e => e.Codigo);
-            entity.Property(e => e.Codigo).HasMaxLength(2).IsFixedLength();
-            entity.Property(e => e.Descripcion).HasMaxLength(60);
+            entity.Property(e => e.Codigo).HasColumnName("codigo").HasColumnType("char(2)");
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").IsRequired().HasMaxLength(60);
         });
 
         modelBuilder.Entity<CategoriaProducto>(entity =>
         {
             entity.ToTable("categoria_producto");
             entity.HasKey(e => e.IdCategoria);
-            entity.Property(e => e.Nombre).HasMaxLength(50);
-            entity.Property(e => e.Descripcion).HasMaxLength(100);
+            entity.Property(e => e.IdCategoria).HasColumnName("id_categoria").ValueGeneratedOnAdd();
+            entity.Property(e => e.Nombre).HasColumnName("nombre").IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").HasMaxLength(100);
         });
 
-        modelBuilder.Entity<CierreCajaEnvio>(entity =>
+        modelBuilder.Entity<EstadoHabitacion>(entity =>
         {
-            entity.ToTable("cierre_caja_envio");
-            entity.HasKey(e => e.Fecha);
-            entity.Property(e => e.IdEstadoSunat).HasDefaultValue(1);
-            entity.Property(e => e.IntentosEnvio).HasDefaultValue(0);
-            entity.HasOne(e => e.EstadoSunat).WithMany(es => es.CierreCajaEnvios).HasForeignKey(e => e.IdEstadoSunat);
+            entity.ToTable("estado_habitacion");
+            entity.HasKey(e => e.IdEstado);
+            entity.Property(e => e.IdEstado).HasColumnName("id_estado").ValueGeneratedOnAdd();
+            entity.Property(e => e.Nombre).HasColumnName("nombre").IsRequired().HasMaxLength(30);
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").HasMaxLength(100);
+            entity.Property(e => e.PermiteCheckin).HasColumnName("permite_checkin");
+            entity.Property(e => e.PermiteCheckout).HasColumnName("permite_checkout");
+            entity.Property(e => e.EsEstadoFinal).HasColumnName("es_estado_final");
+            entity.Property(e => e.ColorUi).HasColumnName("color_ui").HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<RolUsuario>(entity =>
+        {
+            entity.ToTable("rol_usuario");
+            entity.HasKey(e => e.IdRol);
+            entity.Property(e => e.IdRol).HasColumnName("id_rol").ValueGeneratedOnAdd();
+            entity.Property(e => e.Nombre).HasColumnName("nombre").IsRequired().HasMaxLength(30);
+        });
+
+        modelBuilder.Entity<EstadoSunat>(entity =>
+        {
+            entity.ToTable("estado_sunat");
+            entity.HasKey(e => e.Codigo);
+            entity.Property(e => e.Codigo).HasColumnName("codigo");
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").IsRequired().HasMaxLength(60);
+            entity.Property(e => e.DescripcionLarga).HasColumnName("descripcion_larga").HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<Temporada>(entity =>
+        {
+            entity.ToTable("temporada");
+            entity.HasKey(e => e.IdTemporada);
+            entity.Property(e => e.IdTemporada).HasColumnName("id_temporada").ValueGeneratedOnAdd();
+            entity.Property(e => e.Nombre).HasColumnName("nombre").IsRequired().HasMaxLength(50);
+            entity.Property(e => e.FechaInicio).HasColumnName("fecha_inicio").HasColumnType("date");
+            entity.Property(e => e.FechaFin).HasColumnName("fecha_fin").HasColumnType("date");
+            entity.Property(e => e.Multiplicador).HasColumnName("multiplicador").HasColumnType("decimal(3,2)").HasDefaultValue(1.00m);
+        });
+
+        modelBuilder.Entity<Usuario>(entity =>
+        {
+            entity.ToTable("usuario");
+            entity.HasKey(e => e.IdUsuario);
+            entity.Property(e => e.IdUsuario).HasColumnName("id_usuario").ValueGeneratedOnAdd();
+            entity.Property(e => e.Username).HasColumnName("username").IsRequired().HasMaxLength(50);
+            entity.Property(e => e.PasswordHash).HasColumnName("password_hash").IsRequired().HasMaxLength(255);
+            entity.Property(e => e.IdRol).HasColumnName("id_rol");
+            entity.Property(e => e.FechaCreacion).HasColumnName("fecha_creacion").HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.EstaActivo).HasColumnName("esta_activo").HasDefaultValue(true);
+            entity.Property(e => e.DebeCambiarPassword).HasColumnName("debe_cambiar_password").HasDefaultValue(true);
+            entity.HasOne(e => e.Rol).WithMany().HasForeignKey(e => e.IdRol).HasConstraintName("fk_usuario_rol");
         });
 
         modelBuilder.Entity<Cliente>(entity =>
         {
             entity.ToTable("cliente");
             entity.HasKey(e => e.IdCliente);
-            entity.HasIndex(e => new { e.TipoDocumento, e.Documento }).IsUnique();
-            entity.Property(e => e.TipoDocumento).HasMaxLength(1).IsFixedLength();
-            entity.Property(e => e.Documento).HasMaxLength(20);
-            entity.Property(e => e.Nombres).HasMaxLength(100);
-            entity.Property(e => e.Apellidos).HasMaxLength(100);
-            entity.Property(e => e.Nacionalidad).HasMaxLength(50).HasDefaultValue("PERUANA");
-            entity.Property(e => e.Telefono).HasMaxLength(15);
-            entity.Property(e => e.Email).HasMaxLength(100);
-            entity.Property(e => e.Direccion).HasMaxLength(200);
-            entity.Property(e => e.FechaRegistro).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.TipoDocumentoRel).WithMany(t => t.Clientes).HasForeignKey(e => e.TipoDocumento).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.Property(e => e.IdCliente).HasColumnName("id_cliente").ValueGeneratedOnAdd();
+            entity.Property(e => e.TipoDocumento).HasColumnName("tipo_documento").HasColumnType("char(1)");
+            entity.Property(e => e.Documento).HasColumnName("documento").IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Nombres).HasColumnName("nombres").IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Apellidos).HasColumnName("apellidos").IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Nacionalidad).HasColumnName("nacionalidad").HasMaxLength(50).HasDefaultValue("PERUANA");
+            entity.Property(e => e.FechaNacimiento).HasColumnName("fecha_nacimiento").HasColumnType("date");
+            entity.Property(e => e.Telefono).HasColumnName("telefono").HasMaxLength(15);
+            entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(100);
+            entity.Property(e => e.Direccion).HasColumnName("direccion").HasMaxLength(200);
+            entity.Property(e => e.FechaRegistro).HasColumnName("fecha_registro").HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.FechaVerificacionReniec).HasColumnName("fecha_verificacion_reniec");
+            entity.HasOne(e => e.TipoDocumentoNavigation).WithMany().HasForeignKey(e => e.TipoDocumento).HasConstraintName("fk_cliente_tipo_documento");
+            entity.HasIndex(e => new { e.TipoDocumento, e.Documento }).IsUnique().HasDatabaseName("uq_cliente_documento");
+        });
+
+        modelBuilder.Entity<TipoHabitacion>(entity =>
+        {
+            entity.ToTable("tipo_habitacion");
+            entity.HasKey(e => e.IdTipo);
+            entity.Property(e => e.IdTipo).HasColumnName("id_tipo").ValueGeneratedOnAdd();
+            entity.Property(e => e.Nombre).HasColumnName("nombre").IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Capacidad).HasColumnName("capacidad").HasDefaultValue(2);
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").HasMaxLength(200);
+            entity.Property(e => e.PrecioBase).HasColumnName("precio_base").HasColumnType("decimal(10,2)").HasDefaultValue(50.00m);
+        });
+
+        modelBuilder.Entity<Tarifa>(entity =>
+        {
+            entity.ToTable("tarifa");
+            entity.HasKey(e => e.IdTarifa);
+            entity.Property(e => e.IdTarifa).HasColumnName("id_tarifa").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdTipoHabitacion).HasColumnName("id_tipo_habitacion");
+            entity.Property(e => e.IdTemporada).HasColumnName("id_temporada");
+            entity.Property(e => e.Precio).HasColumnName("precio").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.FechaInicio).HasColumnName("fecha_inicio").HasColumnType("date");
+            entity.Property(e => e.FechaFin).HasColumnName("fecha_fin").HasColumnType("date");
+            entity.HasOne(e => e.TipoHabitacion).WithMany().HasForeignKey(e => e.IdTipoHabitacion).HasConstraintName("fk_tarifa_tipo_habitacion");
+            entity.HasOne(e => e.Temporada).WithMany().HasForeignKey(e => e.IdTemporada).HasConstraintName("fk_tarifa_temporada");
+        });
+
+        modelBuilder.Entity<Habitacion>(entity =>
+        {
+            entity.ToTable("habitacion");
+            entity.HasKey(e => e.IdHabitacion);
+            entity.Property(e => e.IdHabitacion).HasColumnName("id_habitacion").ValueGeneratedOnAdd();
+            entity.Property(e => e.NumeroHabitacion).HasColumnName("numero_habitacion").IsRequired().HasMaxLength(10);
+            entity.HasIndex(e => e.NumeroHabitacion).IsUnique().HasDatabaseName("uq_habitacion_numero");
+            entity.Property(e => e.Piso).HasColumnName("piso").HasDefaultValue(1);
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").HasMaxLength(200);
+            entity.Property(e => e.IdTipo).HasColumnName("id_tipo");
+            entity.Property(e => e.PrecioNoche).HasColumnName("precio_noche").HasColumnType("decimal(10,2)").HasDefaultValue(50.00m);
+            entity.Property(e => e.IdEstado).HasColumnName("id_estado").HasDefaultValue(1);
+            entity.Property(e => e.FechaUltimoCambio).HasColumnName("fecha_ultimo_cambio").HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.UsuarioCambio).HasColumnName("usuario_cambio");
+            entity.HasOne(e => e.Tipo).WithMany().HasForeignKey(e => e.IdTipo).HasConstraintName("fk_habitacion_tipo");
+            entity.HasOne(e => e.Estado).WithMany().HasForeignKey(e => e.IdEstado).HasConstraintName("fk_habitacion_estado");
+            entity.HasOne(e => e.Usuario).WithMany().HasForeignKey(e => e.UsuarioCambio).HasConstraintName("fk_habitacion_usuario");
+        });
+
+        modelBuilder.Entity<HistorialEstadoHabitacion>(entity =>
+        {
+            entity.ToTable("historial_estado_habitacion");
+            entity.HasKey(e => e.IdHistorial);
+            entity.Property(e => e.IdHistorial).HasColumnName("id_historial").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdHabitacion).HasColumnName("id_habitacion");
+            entity.Property(e => e.IdEstadoAnterior).HasColumnName("id_estado_anterior");
+            entity.Property(e => e.IdEstadoNuevo).HasColumnName("id_estado_nuevo");
+            entity.Property(e => e.FechaCambio).HasColumnName("fecha_cambio").HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.IdUsuario).HasColumnName("id_usuario");
+            entity.Property(e => e.Observacion).HasColumnName("observacion").HasMaxLength(200);
+            entity.HasOne(e => e.Habitacion).WithMany().HasForeignKey(e => e.IdHabitacion).HasConstraintName("fk_historial_habitacion");
+            entity.HasOne(e => e.Usuario).WithMany().HasForeignKey(e => e.IdUsuario).HasConstraintName("fk_historial_usuario");
+            entity.HasIndex(e => new { e.IdHabitacion, e.FechaCambio }).HasDatabaseName("ix_historial_habitacion_fecha").IsDescending(false, true);
+        });
+
+        modelBuilder.Entity<TransicionEstado>(entity =>
+        {
+            entity.ToTable("transicion_estado");
+            entity.HasKey(e => e.IdTransicion);
+            entity.Property(e => e.IdTransicion).HasColumnName("id_transicion").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdEstadoActual).HasColumnName("id_estado_actual");
+            entity.Property(e => e.IdEstadoSiguiente).HasColumnName("id_estado_siguiente");
+            entity.HasIndex(e => new { e.IdEstadoActual, e.IdEstadoSiguiente }).IsUnique().HasDatabaseName("uq_transicion");
+            entity.HasOne(e => e.EstadoActual).WithMany().HasForeignKey(e => e.IdEstadoActual).HasConstraintName("fk_transicion_actual").OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.EstadoSiguiente).WithMany().HasForeignKey(e => e.IdEstadoSiguiente).HasConstraintName("fk_transicion_siguiente").OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<Reserva>(entity =>
+        {
+            entity.ToTable("reserva");
+            entity.HasKey(e => e.IdReserva);
+            entity.Property(e => e.IdReserva).HasColumnName("id_reserva").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdCliente).HasColumnName("id_cliente");
+            entity.Property(e => e.IdHabitacion).HasColumnName("id_habitacion");
+            entity.Property(e => e.IdUsuario).HasColumnName("id_usuario");
+            entity.Property(e => e.FechaRegistro).HasColumnName("fecha_registro").HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.FechaEntradaPrevista).HasColumnName("fecha_entrada_prevista").HasColumnType("datetime");
+            entity.Property(e => e.FechaSalidaPrevista).HasColumnName("fecha_salida_prevista").HasColumnType("datetime");
+            entity.Property(e => e.MontoTotal).HasColumnName("monto_total").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Estado).HasColumnName("estado").HasMaxLength(20).HasDefaultValue("Pendiente");
+            entity.Property(e => e.Observaciones).HasColumnName("observaciones").HasMaxLength(300);
+            entity.Property(e => e.EsNoShow).HasColumnName("es_no_show");
+            entity.HasOne(e => e.Cliente).WithMany().HasForeignKey(e => e.IdCliente).HasConstraintName("fk_reserva_cliente");
+            entity.HasOne(e => e.Habitacion).WithMany(h => h.Reservas).HasForeignKey(e => e.IdHabitacion).HasConstraintName("fk_reserva_habitacion");
+            entity.HasOne(e => e.Usuario).WithMany().HasForeignKey(e => e.IdUsuario).HasConstraintName("fk_reserva_usuario");
+        });
+
+        modelBuilder.Entity<Estancia>(entity =>
+        {
+            entity.ToTable("estancia");
+            entity.HasKey(e => e.IdEstancia);
+            entity.Property(e => e.IdEstancia).HasColumnName("id_estancia").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdReserva).HasColumnName("id_reserva");
+            entity.Property(e => e.IdHabitacion).HasColumnName("id_habitacion");
+            entity.Property(e => e.IdClienteTitular).HasColumnName("id_cliente_titular");
+            entity.Property(e => e.FechaCheckin).HasColumnName("fecha_checkin").HasColumnType("datetime");
+            entity.Property(e => e.FechaCheckoutPrevista).HasColumnName("fecha_checkout_prevista").HasColumnType("datetime");
+            entity.Property(e => e.FechaCheckoutReal).HasColumnName("fecha_checkout_real").HasColumnType("datetime");
+            entity.Property(e => e.MontoTotal).HasColumnName("monto_total").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Estado).HasColumnName("estado").HasMaxLength(20).HasDefaultValue("Activa");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETDATE()");
+            entity.HasOne(e => e.Reserva).WithMany().HasForeignKey(e => e.IdReserva).HasConstraintName("fk_estancia_reserva");
+            entity.HasOne(e => e.Habitacion).WithMany(h => h.Estancias).HasForeignKey(e => e.IdHabitacion).HasConstraintName("fk_estancia_habitacion");
+            entity.HasOne(e => e.ClienteTitular).WithMany().HasForeignKey(e => e.IdClienteTitular).HasConstraintName("fk_estancia_cliente");
+        });
+
+        modelBuilder.Entity<Huesped>(entity =>
+        {
+            entity.ToTable("huesped");
+            entity.HasKey(e => e.IdHuesped);
+            entity.Property(e => e.IdHuesped).HasColumnName("id_huesped").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdEstancia).HasColumnName("id_estancia");
+            entity.Property(e => e.IdCliente).HasColumnName("id_cliente");
+            entity.Property(e => e.EsTitular).HasColumnName("es_titular").HasDefaultValue(false);
+            entity.Property(e => e.FechaRegistro).HasColumnName("fecha_registro").HasDefaultValueSql("GETDATE()");
+            entity.HasOne(e => e.Estancia).WithMany(e => e.Huespedes).HasForeignKey(e => e.IdEstancia).HasConstraintName("fk_huesped_estancia");
+            entity.HasOne(e => e.Cliente).WithMany().HasForeignKey(e => e.IdCliente).HasConstraintName("fk_huesped_cliente");
+        });
+
+        modelBuilder.Entity<Producto>(entity =>
+        {
+            entity.ToTable("producto");
+            entity.HasKey(e => e.IdProducto);
+            entity.Property(e => e.IdProducto).HasColumnName("id_producto").ValueGeneratedOnAdd();
+            entity.Property(e => e.CodigoSunat).HasColumnName("codigo_sunat").HasMaxLength(20);
+            entity.Property(e => e.Nombre).HasColumnName("nombre").IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Descripcion).HasColumnName("descripcion").HasMaxLength(200);
+            entity.Property(e => e.PrecioUnitario).HasColumnName("precio_unitario").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.IdAfectacionIgv).HasColumnName("id_afectacion_igv").HasColumnType("char(2)").HasDefaultValue("10");
+            entity.Property(e => e.IdCategoria).HasColumnName("id_categoria");
+            entity.Property(e => e.Stock).HasColumnName("stock").HasDefaultValue(0);
+            entity.Property(e => e.StockMinimo).HasColumnName("stock_minimo").HasDefaultValue(5);
+            entity.Property(e => e.UnidadMedida).HasColumnName("unidad_medida").HasMaxLength(3).HasDefaultValue("NIU");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETDATE()");
+            entity.HasOne(e => e.AfectacionIgv).WithMany().HasForeignKey(e => e.IdAfectacionIgv).HasConstraintName("fk_producto_afectacion");
+            entity.HasOne(e => e.Categoria).WithMany().HasForeignKey(e => e.IdCategoria).HasConstraintName("fk_producto_categoria");
+            entity.HasIndex(e => e.CodigoSunat).HasDatabaseName("ix_producto_codigo_sunat");
+        });
+
+        modelBuilder.Entity<ItemEstancia>(entity =>
+        {
+            entity.ToTable("item_estancia");
+            entity.HasKey(e => e.IdItem);
+            entity.Property(e => e.IdItem).HasColumnName("id_item").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdEstancia).HasColumnName("id_estancia");
+            entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.PrecioUnitario).HasColumnName("precio_unitario").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Subtotal).HasColumnName("subtotal").HasColumnType("decimal(10,2)").HasComputedColumnSql("(cantidad * precio_unitario)", stored: true);
+            entity.Property(e => e.FechaRegistro).HasColumnName("fecha_registro").HasDefaultValueSql("GETDATE()");
+            entity.HasOne(e => e.Estancia).WithMany(e => e.ItemsEstancia).HasForeignKey(e => e.IdEstancia).HasConstraintName("fk_item_estancia_estancia");
+            entity.HasOne(e => e.Producto).WithMany().HasForeignKey(e => e.IdProducto).HasConstraintName("fk_item_estancia_producto");
+            entity.HasIndex(e => e.IdEstancia).HasDatabaseName("ix_item_estancia_estancia");
+        });
+
+        modelBuilder.Entity<Venta>(entity =>
+        {
+            entity.ToTable("venta");
+            entity.HasKey(e => e.IdVenta);
+            entity.Property(e => e.IdVenta).HasColumnName("id_venta").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdCliente).HasColumnName("id_cliente");
+            entity.Property(e => e.IdUsuario).HasColumnName("id_usuario");
+            entity.Property(e => e.FechaVenta).HasColumnName("fecha_venta").HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.Total).HasColumnName("total").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.MetodoPago).HasColumnName("metodo_pago").HasColumnType("char(3)");
+            entity.HasOne(e => e.Cliente).WithMany().HasForeignKey(e => e.IdCliente).HasConstraintName("fk_venta_cliente");
+            entity.HasOne(e => e.Usuario).WithMany().HasForeignKey(e => e.IdUsuario).HasConstraintName("fk_venta_usuario");
+            entity.HasOne(e => e.MetodoPagoNavigation).WithMany().HasForeignKey(e => e.MetodoPago).HasConstraintName("fk_venta_metodo_pago");
+        });
+
+        modelBuilder.Entity<ItemVenta>(entity =>
+        {
+            entity.ToTable("item_venta");
+            entity.HasKey(e => e.IdItem);
+            entity.Property(e => e.IdItem).HasColumnName("id_item").ValueGeneratedOnAdd();
+            entity.Property(e => e.IdVenta).HasColumnName("id_venta");
+            entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.PrecioUnitario).HasColumnName("precio_unitario").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.Subtotal).HasColumnName("subtotal").HasColumnType("decimal(10,2)").HasComputedColumnSql("(cantidad * precio_unitario)", stored: true);
+            entity.HasOne(e => e.Venta).WithMany(v => v.ItemsVenta).HasForeignKey(e => e.IdVenta).HasConstraintName("fk_item_venta_venta");
+            entity.HasOne(e => e.Producto).WithMany().HasForeignKey(e => e.IdProducto).HasConstraintName("fk_item_venta_producto");
+            entity.HasIndex(e => e.IdVenta).HasDatabaseName("ix_item_venta_venta");
         });
 
         modelBuilder.Entity<Comprobante>(entity =>
@@ -104,297 +376,45 @@ public partial class HotelDbContext : DbContext
             entity.ToTable("comprobante");
             entity.HasKey(e => e.IdComprobante);
             entity.Property(e => e.IdComprobante).HasColumnName("id_comprobante").ValueGeneratedOnAdd();
-            entity.HasIndex(e => new { e.Serie, e.Correlativo }).IsUnique();
-
-            entity.Property(e => e.TipoComprobante).HasColumnName("tipo_comprobante").HasMaxLength(2).IsFixedLength().IsRequired();
-            entity.Property(e => e.Serie).HasColumnName("serie").HasMaxLength(4).IsRequired();
-            entity.Property(e => e.Correlativo).HasColumnName("correlativo").IsRequired();
-            entity.Property(e => e.FechaEmision).HasColumnName("fecha_emision").HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.MontoTotal).HasColumnName("monto_total").HasColumnType("decimal(10,2)").IsRequired();
-            entity.Property(e => e.IgvMonto).HasColumnName("igv_monto").HasColumnType("decimal(10,2)").IsRequired();
-            entity.Property(e => e.ClienteDocumentoTipo).HasColumnName("cliente_documento_tipo").HasMaxLength(1).IsFixedLength(false);
+            entity.Property(e => e.IdEstancia).HasColumnName("id_estancia");
+            entity.Property(e => e.IdVenta).HasColumnName("id_venta");
+            entity.Property(e => e.TipoComprobante).HasColumnName("tipo_comprobante").HasColumnType("char(2)");
+            entity.Property(e => e.Serie).HasColumnName("serie").IsRequired().HasMaxLength(4);
+            entity.Property(e => e.Correlativo).HasColumnName("correlativo");
+            entity.Property(e => e.FechaEmision).HasColumnName("fecha_emision").HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.MontoTotal).HasColumnName("monto_total").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.IgvMonto).HasColumnName("igv_monto").HasColumnType("decimal(10,2)");
+            entity.Property(e => e.ClienteDocumentoTipo).HasColumnName("cliente_documento_tipo").HasColumnType("char(1)");
             entity.Property(e => e.ClienteDocumentoNum).HasColumnName("cliente_documento_num").HasMaxLength(20);
             entity.Property(e => e.ClienteNombre).HasColumnName("cliente_nombre").HasMaxLength(200);
-            entity.Property(e => e.MetodoPago).HasColumnName("metodo_pago").HasMaxLength(3).IsFixedLength(false);
-            entity.Property(e => e.IdEstadoSunat).HasColumnName("id_estado_sunat").HasDefaultValue(1).IsRequired();
-            entity.Property(e => e.XmlFirmado).HasColumnName("xml_firmado");
-            entity.Property(e => e.CdrZip).HasColumnName("cdr_zip");
+            entity.Property(e => e.MetodoPago).HasColumnName("metodo_pago").HasColumnType("char(3)");
+            entity.Property(e => e.IdEstadoSunat).HasColumnName("id_estado_sunat").HasDefaultValue(1);
+            entity.Property(e => e.XmlFirmado).HasColumnName("xml_firmado").HasColumnType("nvarchar(max)");
+            entity.Property(e => e.CdrZip).HasColumnName("cdr_zip").HasColumnType("varbinary(max)");
             entity.Property(e => e.FechaEnvio).HasColumnName("fecha_envio");
             entity.Property(e => e.IntentosEnvio).HasColumnName("intentos_envio").HasDefaultValue(0);
             entity.Property(e => e.HashXml).HasColumnName("hash_xml").HasMaxLength(64);
-
-            entity.Property(e => e.IdEstancia).HasColumnName("id_estancia");
-            entity.Property(e => e.IdVenta).HasColumnName("id_venta");
-
-            entity.HasOne<EstadoSunat>().WithMany().HasForeignKey(e => e.IdEstadoSunat).HasPrincipalKey(e => e.Codigo).OnDelete(DeleteBehavior.SetNull);
-            entity.HasOne<Estancium>().WithMany().HasForeignKey(e => e.IdEstancia).OnDelete(DeleteBehavior.SetNull);
-            entity.HasOne<Venta>().WithMany().HasForeignKey(e => e.IdVenta).OnDelete(DeleteBehavior.SetNull);
-            entity.HasOne<MetodoPago>().WithMany().HasForeignKey(e => e.MetodoPago).OnDelete(DeleteBehavior.SetNull);
-            entity.HasOne<TipoComprobante>().WithMany().HasForeignKey(e => e.TipoComprobante).OnDelete(DeleteBehavior.SetNull);
-            entity.HasOne<TipoDocumento>().WithMany().HasForeignKey(e => e.ClienteDocumentoTipo).OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(e => new { e.Serie, e.Correlativo }).IsUnique().HasDatabaseName("uq_comprobante_serie_correlativo");
+            entity.HasOne(e => e.Estancia).WithMany().HasForeignKey(e => e.IdEstancia).HasConstraintName("fk_comprobante_estancia");
+            entity.HasOne(e => e.Venta).WithMany().HasForeignKey(e => e.IdVenta).HasConstraintName("fk_comprobante_venta");
+            entity.HasOne(e => e.TipoComprobanteNavigation).WithMany().HasForeignKey(e => e.TipoComprobante).HasConstraintName("fk_comprobante_tipo");
+            entity.HasOne(e => e.ClienteDocumentoTipoNavigation).WithMany().HasForeignKey(e => e.ClienteDocumentoTipo).HasConstraintName("fk_comprobante_cliente_tipo");
+            entity.HasOne(e => e.MetodoPagoNavigation).WithMany().HasForeignKey(e => e.MetodoPago).HasConstraintName("fk_comprobante_metodo_pago");
+            entity.HasOne(e => e.EstadoSunat).WithMany().HasForeignKey(e => e.IdEstadoSunat).HasConstraintName("fk_comprobante_estado_sunat");
+            entity.HasIndex(e => e.FechaEmision).HasDatabaseName("ix_comprobante_fecha_emision");
+            entity.HasIndex(e => new { e.ClienteDocumentoTipo, e.ClienteDocumentoNum }).HasDatabaseName("ix_comprobante_cliente");
         });
 
-        modelBuilder.Entity<Configuracion>(entity =>
+        modelBuilder.Entity<CierreCajaEnvio>(entity =>
         {
-            entity.ToTable("configuracion");
-            entity.HasKey(e => e.IdConfiguracion);
-            entity.Property(e => e.IdConfiguracion).HasDefaultValue(1);
-            entity.Property(e => e.Nombre).HasMaxLength(100);
-            entity.Property(e => e.Direccion).HasMaxLength(200);
-            entity.Property(e => e.Ruc).HasMaxLength(11);
-            entity.Property(e => e.Telefono).HasMaxLength(20);
-            entity.Property(e => e.TasaIgvHotel).HasColumnType("decimal(5,2)").HasDefaultValue(18.00m);
-            entity.Property(e => e.TasaIgvProductos).HasColumnType("decimal(5,2)").HasDefaultValue(18.00m);
-        });
-
-        modelBuilder.Entity<EstadoHabitacion>(entity =>
-        {
-            entity.ToTable("estado_habitacion");
-            entity.HasKey(e => e.IdEstado);
-            entity.Property(e => e.Nombre).HasMaxLength(30);
-            entity.Property(e => e.Descripcion).HasMaxLength(100);
-            entity.Property(e => e.ColorUi).HasMaxLength(20);
-            entity.HasMany(e => e.Habitaciones).WithOne(h => h.Estado).HasForeignKey(e => e.IdEstado).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasMany(e => e.TransicionesComoEstadoActual).WithOne(t => t.EstadoActual).HasForeignKey(e => e.IdEstadoActual).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasMany(e => e.TransicionesComoEstadoSiguiente).WithOne(t => t.EstadoSiguiente).HasForeignKey(e => e.IdEstadoSiguiente).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<EstadoSunat>(entity =>
-        {
-            entity.ToTable("estado_sunat");
-            entity.HasKey(e => e.Codigo);
-            entity.Property(e => e.Descripcion).HasMaxLength(60);
-            entity.Property(e => e.DescripcionLarga).HasMaxLength(200);
-        });
-
-        modelBuilder.Entity<Estancium>(entity =>
-        {
-            entity.ToTable("estancia");
-            entity.HasKey(e => e.IdEstancia);
-            entity.Property(e => e.Estado).HasMaxLength(20).HasDefaultValue("Activa");
-            entity.Property(e => e.MontoTotal).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.ClienteTitular).WithMany(c => c.Estancias).HasForeignKey(e => e.IdClienteTitular).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Habitacion).WithMany(h => h.Estancias).HasForeignKey(e => e.IdHabitacion).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Reserva).WithMany(r => r.Estancias).HasForeignKey(e => e.IdReserva);
-            entity.HasMany(e => e.Huespedes).WithOne(h => h.Estancia).HasForeignKey(e => e.IdEstancia).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasMany(e => e.ItemsEstancia).WithOne(i => i.Estancia).HasForeignKey(e => e.IdEstancia).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<Habitacion>(entity =>
-        {
-            entity.ToTable("habitacion");
-            entity.HasKey(e => e.IdHabitacion);
-            entity.HasIndex(e => e.NumeroHabitacion).IsUnique();
-            entity.Property(e => e.NumeroHabitacion).HasMaxLength(10);
-            entity.Property(e => e.Piso).HasDefaultValue(1);
-            entity.Property(e => e.Descripcion).HasMaxLength(200);
-            entity.Property(e => e.PrecioNoche).HasColumnType("decimal(10,2)").HasDefaultValue(50.00m);
-            entity.Property(e => e.IdEstado).HasDefaultValue(1);
-            entity.Property(e => e.FechaUltimoCambio).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.Estado).WithMany(est => est.Habitaciones).HasForeignKey(e => e.IdEstado).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.TipoHabitacion).WithMany(th => th.Habitaciones).HasForeignKey(e => e.IdTipo).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.UsuarioCambioRel).WithMany(u => u.HabitacionesModificadas).HasForeignKey(e => e.UsuarioCambio);
-            entity.HasMany(e => e.HistorialesEstadoHabitacion).WithOne(h => h.Habitacion).HasForeignKey(e => e.IdHabitacion).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasMany(e => e.Reservas).WithOne(r => r.Habitacion).HasForeignKey(e => e.IdHabitacion).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<HistorialEstadoHabitacion>(entity =>
-        {
-            entity.ToTable("historial_estado_habitacion");
-            entity.HasKey(e => e.IdHistorial);
-            entity.HasIndex(e => new { e.IdHabitacion, e.FechaCambio });
-            entity.Property(e => e.Observacion).HasMaxLength(200);
-            entity.Property(e => e.FechaCambio).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.Habitacion).WithMany(h => h.HistorialesEstadoHabitacion).HasForeignKey(e => e.IdHabitacion).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Usuario).WithMany(u => u.HistorialesEstadoHabitacion).HasForeignKey(e => e.IdUsuario);
-        });
-
-        modelBuilder.Entity<Huesped>(entity =>
-        {
-            entity.ToTable("huesped");
-            entity.HasKey(e => e.IdHuesped);
-            entity.Property(e => e.EsTitular).HasDefaultValue(false);
-            entity.Property(e => e.FechaRegistro).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.Cliente).WithMany(c => c.Huespedes).HasForeignKey(e => e.IdCliente).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Estancia).WithMany(e => e.Huespedes).HasForeignKey(e => e.IdEstancia).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<ItemEstancium>(entity =>
-        {
-            entity.ToTable("item_estancia");
-            entity.HasKey(e => e.IdItem);
-            entity.Property(e => e.PrecioUnitario).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.Subtotal).HasColumnType("decimal(21,2)").HasComputedColumnSql("([cantidad]*[precio_unitario])", true);
-            entity.Property(e => e.FechaRegistro).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.Estancia).WithMany(est => est.ItemsEstancia).HasForeignKey(e => e.IdEstancia).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Producto).WithMany(p => p.ItemsEstancia).HasForeignKey(e => e.IdProducto).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<ItemVenta>(entity =>
-        {
-            entity.ToTable("item_venta");
-            entity.HasKey(e => e.IdItem);
-            entity.Property(e => e.PrecioUnitario).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.Subtotal).HasColumnType("decimal(21,2)").HasComputedColumnSql("([cantidad]*[precio_unitario])", true);
-            entity.HasOne(e => e.Producto).WithMany(p => p.ItemsVenta).HasForeignKey(e => e.IdProducto).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Venta).WithMany(v => v.ItemsVenta).HasForeignKey(e => e.IdVenta).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<MetodoPago>(entity =>
-        {
-            entity.ToTable("metodo_pago");
-            entity.HasKey(e => e.Codigo);
-            entity.Property(e => e.Codigo).HasMaxLength(3).IsFixedLength();
-            entity.Property(e => e.Descripcion).HasMaxLength(60);
-        });
-
-        modelBuilder.Entity<Producto>(entity =>
-        {
-            entity.ToTable("producto");
-            entity.HasKey(e => e.IdProducto);
-            entity.HasIndex(e => e.CodigoSunat);
-            entity.Property(e => e.CodigoSunat).HasMaxLength(20);
-            entity.Property(e => e.Nombre).HasMaxLength(100);
-            entity.Property(e => e.Descripcion).HasMaxLength(200);
-            entity.Property(e => e.PrecioUnitario).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.IdAfectacionIgv).HasMaxLength(2).IsFixedLength().HasDefaultValue("10");
-            entity.Property(e => e.UnidadMedida).HasMaxLength(3).HasDefaultValue("NIU");
-            entity.Property(e => e.Stock).HasDefaultValue(0);
-            entity.Property(e => e.StockMinimo).HasDefaultValue(5);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.AfectacionIgv).WithMany(a => a.Productos).HasForeignKey(e => e.IdAfectacionIgv).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Categoria).WithMany(c => c.Productos).HasForeignKey(e => e.IdCategoria);
-            entity.HasMany(e => e.ItemsEstancia).WithOne(i => i.Producto).HasForeignKey(e => e.IdProducto);
-            entity.HasMany(e => e.ItemsVenta).WithOne(i => i.Producto).HasForeignKey(e => e.IdProducto);
-        });
-
-        modelBuilder.Entity<Reserva>(entity =>
-        {
-            entity.ToTable("reserva");
-            entity.HasKey(e => e.IdReserva);
-            entity.Property(e => e.Estado).HasMaxLength(20).HasDefaultValue("Pendiente");
-            entity.Property(e => e.MontoTotal).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.Observaciones).HasMaxLength(300);
-            entity.Property(e => e.FechaRegistro).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.Cliente).WithMany(c => c.Reservas).HasForeignKey(e => e.IdCliente).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Habitacion).WithMany(h => h.Reservas).HasForeignKey(e => e.IdHabitacion).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Usuario).WithMany(u => u.Reservas).HasForeignKey(e => e.IdUsuario).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasMany(e => e.Estancias).WithOne(e => e.Reserva).HasForeignKey(e => e.IdReserva);
-        });
-
-        modelBuilder.Entity<RolUsuario>(entity =>
-        {
-            entity.ToTable("rol_usuario");
-            entity.HasKey(e => e.IdRol);
-            entity.Property(e => e.Nombre).HasMaxLength(30);
-            entity.HasMany(e => e.Usuarios).WithOne(u => u.Rol).HasForeignKey(e => e.IdRol).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<Tarifa>(entity =>
-        {
-            entity.ToTable("tarifa");
-            entity.HasKey(e => e.IdTarifa);
-            entity.Property(e => e.Precio).HasColumnType("decimal(10,2)");
-            entity.HasOne(e => e.TipoHabitacion).WithMany(th => th.Tarifas).HasForeignKey(e => e.IdTipoHabitacion).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.Temporada).WithMany(t => t.Tarifas).HasForeignKey(e => e.IdTemporada);
-        });
-
-        modelBuilder.Entity<Temporada>(entity =>
-        {
-            entity.ToTable("temporada");
-            entity.HasKey(e => e.IdTemporada);
-            entity.Property(e => e.Nombre).HasMaxLength(50);
-            entity.Property(e => e.Multiplicador).HasColumnType("decimal(3,2)").HasDefaultValue(1.00m);
-            entity.HasMany(e => e.Tarifas).WithOne(t => t.Temporada).HasForeignKey(e => e.IdTemporada);
-        });
-
-        modelBuilder.Entity<TipoComprobante>(entity =>
-        {
-            entity.ToTable("tipo_comprobante");
-            entity.HasKey(e => e.Codigo);
-            entity.Property(e => e.Codigo).HasMaxLength(2).IsFixedLength();
-            entity.Property(e => e.Descripcion).HasMaxLength(60);
-        });
-
-        modelBuilder.Entity<TipoDocumento>(entity =>
-        {
-            entity.ToTable("tipo_documento");
-            entity.HasKey(e => e.Codigo);
-            entity.Property(e => e.Codigo).HasMaxLength(1).IsFixedLength();
-            entity.Property(e => e.Descripcion).HasMaxLength(60);
-            entity.HasMany(e => e.Clientes).WithOne(c => c.TipoDocumentoRel).HasForeignKey(e => e.TipoDocumento);
-        });
-
-        modelBuilder.Entity<TipoHabitacion>(entity =>
-        {
-            entity.ToTable("tipo_habitacion");
-            entity.HasKey(e => e.IdTipo);
-            entity.Property(e => e.Nombre).HasMaxLength(50);
-            entity.Property(e => e.Descripcion).HasMaxLength(200);
-            entity.Property(e => e.Capacidad).HasDefaultValue(2);
-            entity.Property(e => e.PrecioBase).HasColumnType("decimal(10,2)").HasDefaultValue(50.00m);
-            entity.HasMany(e => e.Habitaciones).WithOne(h => h.TipoHabitacion).HasForeignKey(e => e.IdTipo).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasMany(e => e.Tarifas).WithOne(t => t.TipoHabitacion).HasForeignKey(e => e.IdTipoHabitacion);
-        });
-
-        modelBuilder.Entity<TransicionEstado>(entity =>
-        {
-            entity.ToTable("transicion_estado");
-            entity.HasKey(e => e.IdTransicion);
-            entity.HasIndex(e => new { e.IdEstadoActual, e.IdEstadoSiguiente }).IsUnique();
-            entity.HasOne(e => e.EstadoActual).WithMany(est => est.TransicionesComoEstadoActual).HasForeignKey(e => e.IdEstadoActual).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.EstadoSiguiente).WithMany(est => est.TransicionesComoEstadoSiguiente).HasForeignKey(e => e.IdEstadoSiguiente).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<Usuario>(entity =>
-        {
-            entity.ToTable("usuario");
-            entity.HasKey(e => e.IdUsuario);
-            entity.HasIndex(e => e.Username).IsUnique();
-            entity.Property(e => e.IdUsuario).HasColumnName("id_usuario").ValueGeneratedOnAdd();
-            entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(50).IsRequired();
-            entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.IdRol).HasColumnName("id_rol").IsRequired();
-            entity.Property(e => e.FechaCreacion).HasColumnName("fecha_creacion").HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.EstaActivo).HasColumnName("esta_activo").HasDefaultValue(true);
-            entity.HasOne(e => e.Rol).WithMany(r => r.Usuarios).HasForeignKey(e => e.IdRol).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasMany(e => e.Reservas).WithOne(r => r.Usuario).HasForeignKey(e => e.IdUsuario);
-            entity.HasMany(e => e.Ventas).WithOne(v => v.Usuario).HasForeignKey(e => e.IdUsuario).OnDelete(DeleteBehavior.ClientSetNull);
-        });
-
-        modelBuilder.Entity<VCierreCajaDiario>(entity =>
-        {
-            entity.HasNoKey().ToView("v_cierre_caja_diario");
-            entity.Property(e => e.Ingresos).HasColumnType("decimal(21,2)");
-        });
-
-        modelBuilder.Entity<VEstadoHabitacione>(entity =>
-        {
-            entity.HasNoKey().ToView("v_estado_habitaciones");
-            entity.Property(e => e.NumeroHabitacion).HasMaxLength(10);
-            entity.Property(e => e.Estado).HasMaxLength(30);
-            entity.Property(e => e.TipoHabitacion).HasMaxLength(50);
-            entity.Property(e => e.PrecioNoche).HasColumnType("decimal(10,2)");
-        });
-
-        modelBuilder.Entity<VOcupacionDiarium>(entity =>
-        {
-            entity.HasNoKey().ToView("v_ocupacion_diaria");
-            entity.Property(e => e.PorcentajeOcupacion).HasColumnType("decimal(5,2)");
-        });
-
-        modelBuilder.Entity<Venta>(entity =>
-        {
-            entity.ToTable("venta");
-            entity.HasKey(e => e.IdVenta);
-            entity.Property(e => e.Total).HasColumnType("decimal(10,2)");
-            entity.Property(e => e.MetodoPago).HasMaxLength(3).IsFixedLength();
-            entity.Property(e => e.FechaVenta).HasDefaultValueSql("(getdate())");
-            entity.HasOne(e => e.Cliente).WithMany(c => c.Ventas).HasForeignKey(e => e.IdCliente);
-            entity.HasOne(e => e.Usuario).WithMany(u => u.Ventas).HasForeignKey(e => e.IdUsuario).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasOne(e => e.MetodoPagoRel).WithMany(m => m.Ventas).HasForeignKey(e => e.MetodoPago).OnDelete(DeleteBehavior.ClientSetNull);
-            entity.HasMany(e => e.ItemsVenta).WithOne(i => i.Venta).HasForeignKey(e => e.IdVenta);
+            entity.ToTable("cierre_caja_envio");
+            entity.HasKey(e => e.Fecha);
+            entity.Property(e => e.Fecha).HasColumnName("fecha").HasColumnType("date");
+            entity.Property(e => e.IdEstadoSunat).HasColumnName("id_estado_sunat").HasDefaultValue(1);
+            entity.Property(e => e.FechaEnvio).HasColumnName("fecha_envio");
+            entity.Property(e => e.IntentosEnvio).HasColumnName("intentos_envio").HasDefaultValue(0);
+            entity.Property(e => e.HashXml).HasColumnName("hash_xml").HasMaxLength(64);
+            entity.HasOne(e => e.EstadoSunat).WithMany().HasForeignKey(e => e.IdEstadoSunat).HasConstraintName("fk_cierre_estado_sunat");
         });
 
         modelBuilder.Entity<LoginAttempt>(entity =>
@@ -402,15 +422,45 @@ public partial class HotelDbContext : DbContext
             entity.ToTable("login_attempt");
             entity.HasKey(e => e.IdLoginAttempt);
             entity.Property(e => e.IdLoginAttempt).HasColumnName("id_login_attempt").ValueGeneratedOnAdd();
-            entity.Property(e => e.IpAddress).HasColumnName("ip_address").HasMaxLength(50).IsRequired();
+            entity.Property(e => e.IpAddress).HasColumnName("ip_address").IsRequired().HasMaxLength(50);
             entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(100);
-            entity.Property(e => e.AttemptedAt).HasColumnName("attempted_at").HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Succeeded).HasColumnName("succeeded").HasDefaultValue(false);
+            entity.Property(e => e.AttemptedAt).HasColumnName("attempted_at").HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.Succeeded).HasColumnName("succeeded");
             entity.Property(e => e.UserAgent).HasColumnName("user_agent").HasMaxLength(500);
+            entity.HasIndex(e => new { e.IpAddress, e.AttemptedAt }).HasDatabaseName("ix_login_attempt_ip_fecha");
+            entity.HasIndex(e => new { e.Username, e.AttemptedAt }).HasDatabaseName("IX_login_attempt_username_at");
         });
 
-        OnModelCreatingPartial(modelBuilder);
-    }
+        // Vistas keyless
+        modelBuilder.Entity<VCierreCajaDiario>(entity =>
+        {
+            entity.ToView("v_cierre_caja_diario");
+            entity.HasNoKey();
+            entity.Property(e => e.Fecha).HasColumnName("fecha");
+            entity.Property(e => e.MetodoPago).HasColumnName("metodo_pago");
+            entity.Property(e => e.Ingresos).HasColumnName("ingresos");
+            entity.Property(e => e.Concepto).HasColumnName("concepto");
+        });
 
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+        modelBuilder.Entity<VEstadoHabitacion>(entity =>
+        {
+            entity.ToView("v_estado_habitaciones");
+            entity.HasNoKey();
+            entity.Property(e => e.NumeroHabitacion).HasColumnName("numero_habitacion");
+            entity.Property(e => e.TipoHabitacion).HasColumnName("tipo_habitacion");
+            entity.Property(e => e.Estado).HasColumnName("estado");
+            entity.Property(e => e.PrecioNoche).HasColumnName("precio_noche");
+            entity.Property(e => e.FechaUltimoCambio).HasColumnName("fecha_ultimo_cambio");
+        });
+
+        modelBuilder.Entity<VOcupacionDiaria>(entity =>
+        {
+            entity.ToView("v_ocupacion_diaria");
+            entity.HasNoKey();
+            entity.Property(e => e.Fecha).HasColumnName("fecha");
+            entity.Property(e => e.Ocupadas).HasColumnName("ocupadas");
+            entity.Property(e => e.Total).HasColumnName("total");
+            entity.Property(e => e.PorcentajeOcupacion).HasColumnName("porcentaje_ocupacion");
+        });
+    }
 }

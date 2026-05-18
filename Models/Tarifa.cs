@@ -1,23 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace HotelGenericoApi.Models;
 
-namespace HotelGenericoApi.Models;
-
-public partial class Tarifa
+public class Tarifa
 {
     public int IdTarifa { get; set; }
-
     public int IdTipoHabitacion { get; set; }
-
     public int? IdTemporada { get; set; }
-
     public decimal Precio { get; set; }
-
     public DateOnly? FechaInicio { get; set; }
-
     public DateOnly? FechaFin { get; set; }
 
-    public virtual TipoHabitacion TipoHabitacion { get; set; } = null!;
-
-    public virtual Temporada? Temporada { get; set; }
+    // Navegación
+    public TipoHabitacion? TipoHabitacion { get; set; }
+    public Temporada? Temporada { get; set; }
 }

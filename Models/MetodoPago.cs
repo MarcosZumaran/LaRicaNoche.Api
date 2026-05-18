@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace HotelGenericoApi.Models;
 
-namespace HotelGenericoApi.Models;
-
-public partial class MetodoPago
+public class MetodoPago
 {
-    public string Codigo { get; set; } = null!;
-
+    public string Codigo { get; set; } = null!; // char(3)
     public string Descripcion { get; set; } = null!;
-
-
-    public virtual ICollection<Venta> Ventas { get; set; } = new List<Venta>();
 }

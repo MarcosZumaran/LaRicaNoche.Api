@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace HotelGenericoApi.Models;
 
-namespace HotelGenericoApi.Models;
-
-public partial class TipoComprobante
+public class TipoComprobante
 {
-    public string Codigo { get; set; } = null!;
-
+    public string Codigo { get; set; } = null!; // char(2)
     public string Descripcion { get; set; } = null!;
-
 }
