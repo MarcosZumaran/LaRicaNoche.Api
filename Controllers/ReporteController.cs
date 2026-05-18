@@ -10,6 +10,7 @@ namespace HotelGenericoApi.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 [EnableRateLimiting("global")]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class ReporteController : ControllerBase
 {
     private readonly IReporteService _reporteService;
@@ -22,6 +23,7 @@ public class ReporteController : ControllerBase
     /// <summary>Obtiene el cierre de caja diario con detalle de ingresos y egresos.</summary>
     /// <param name="fecha">Fecha del cierre (yyyy-MM-dd).</param>
     [HttpGet("cierre-caja")]
+    [ProducesResponseType(typeof(List<VCierreCajaDiario>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<VCierreCajaDiario>>> GetCierreCaja([FromQuery] DateOnly fecha)
     {
         var result = await _reporteService.GetCierreCajaAsync(fecha);
@@ -30,6 +32,7 @@ public class ReporteController : ControllerBase
 
     /// <summary>Obtiene el estado actual de todas las habitaciones.</summary>
     [HttpGet("estado-habitaciones")]
+    [ProducesResponseType(typeof(List<VEstadoHabitacion>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<VEstadoHabitacion>>> GetEstadoHabitaciones()
     {
         var result = await _reporteService.GetEstadoHabitacionesAsync();
@@ -39,6 +42,7 @@ public class ReporteController : ControllerBase
     /// <summary>Obtiene el reporte de ocupación diaria.</summary>
     /// <param name="fecha">Fecha del reporte (yyyy-MM-dd).</param>
     [HttpGet("ocupacion-diaria")]
+    [ProducesResponseType(typeof(List<VOcupacionDiaria>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<VOcupacionDiaria>>> GetOcupacionDiaria([FromQuery] DateOnly fecha)
     {
         var result = await _reporteService.GetOcupacionDiariaAsync(fecha);

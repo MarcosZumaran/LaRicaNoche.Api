@@ -10,6 +10,7 @@ namespace HotelGenericoApi.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 [EnableRateLimiting("global")]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class EstanciaController : ControllerBase
 {
     private readonly IEstanciaService _estanciaService;
@@ -21,6 +22,7 @@ public class EstanciaController : ControllerBase
 
     /// <summary>Obtiene todas las estancias registradas.</summary>
     [HttpGet]
+    [ProducesResponseType(typeof(List<Estancia>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<Estancia>>> GetAll()
     {
         var estancias = await _estanciaService.GetAllAsync();
@@ -30,6 +32,8 @@ public class EstanciaController : ControllerBase
     /// <summary>Obtiene una estancia por su ID con detalles completos.</summary>
     /// <param name="id">ID de la estancia.</param>
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(Estancia), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Estancia>> GetById(int id)
     {
         var estancia = await _estanciaService.GetByIdAsync(id);
@@ -41,6 +45,8 @@ public class EstanciaController : ControllerBase
     /// <summary>Registra un check-in creando una nueva estancia y marcando la habitación como ocupada.</summary>
     /// <param name="estancia">Datos de la estancia.</param>
     [HttpPost]
+    [ProducesResponseType(typeof(Estancia), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Estancia>> Create([FromBody] Estancia estancia)
     {
         var result = await _estanciaService.CreateAsync(estancia);
@@ -51,6 +57,8 @@ public class EstanciaController : ControllerBase
     /// <param name="idEstancia">ID de la estancia.</param>
     /// <param name="idUsuario">ID del usuario que realiza el checkout.</param>
     [HttpPost("{idEstancia}/checkout")]
+    [ProducesResponseType(typeof(Estancia), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Estancia>> Checkout(int idEstancia, [FromQuery] int idUsuario)
     {
         var result = await _estanciaService.CheckoutAsync(idEstancia, idUsuario);
@@ -63,6 +71,8 @@ public class EstanciaController : ControllerBase
     /// <param name="idEstancia">ID de la estancia.</param>
     /// <param name="huesped">Datos del huésped.</param>
     [HttpPost("{idEstancia}/huesped")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> AddHuesped(int idEstancia, [FromBody] Huesped huesped)
     {
         var result = await _estanciaService.AddHuespedAsync(idEstancia, huesped);
@@ -75,6 +85,8 @@ public class EstanciaController : ControllerBase
     /// <param name="idEstancia">ID de la estancia.</param>
     /// <param name="item">Detalle del consumo (producto, cantidad, precio).</param>
     [HttpPost("{idEstancia}/consumo")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> AddConsumo(int idEstancia, [FromBody] ItemEstancia item)
     {
         var result = await _estanciaService.AddConsumoAsync(idEstancia, item);

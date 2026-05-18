@@ -10,6 +10,8 @@ namespace HotelGenericoApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Administrador,Recepcionista")]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class ClienteController : ControllerBase
 {
     private readonly IClienteService _service;
@@ -25,6 +27,7 @@ public class ClienteController : ControllerBase
     /// <param name="page">Número de página (por defecto 1).</param>
     /// <param name="pageSize">Tamaño de página (por defecto 10).</param>
     [HttpGet]
+    [ProducesResponseType(typeof(PagedResult<ClienteResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var result = await _service.GetPagedAsync(page, pageSize);
@@ -34,6 +37,8 @@ public class ClienteController : ControllerBase
     /// <summary>Obtiene un cliente por su ID.</summary>
     /// <param name="id">ID del cliente.</param>
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ClienteResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id)
     {
         var result = await _service.GetByIdAsync(id);
@@ -44,6 +49,8 @@ public class ClienteController : ControllerBase
     /// <param name="tipo">Tipo de documento (1=DNI, 6=RUC, etc.).</param>
     /// <param name="documento">Número de documento.</param>
     [HttpGet("documento/{tipo}/{documento}")]
+    [ProducesResponseType(typeof(ClienteResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByDocumento(string tipo, string documento)
     {
         var result = await _service.GetByDocumentoAsync(tipo, documento);
@@ -53,6 +60,9 @@ public class ClienteController : ControllerBase
     /// <summary>Crea un nuevo cliente.</summary>
     /// <param name="dto">Datos del cliente.</param>
     [HttpPost]
+    [ProducesResponseType(typeof(ClienteResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(ClienteCreateDto dto)
     {
         try
@@ -70,6 +80,8 @@ public class ClienteController : ControllerBase
     /// <param name="id">ID del cliente.</param>
     /// <param name="dto">Datos actualizados.</param>
     [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, ClienteUpdateDto dto)
     {
         var updated = await _service.UpdateAsync(id, dto);
@@ -79,6 +91,8 @@ public class ClienteController : ControllerBase
     /// <summary>Elimina un cliente por su ID.</summary>
     /// <param name="id">ID del cliente.</param>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _service.DeleteAsync(id);
@@ -91,6 +105,8 @@ public class ClienteController : ControllerBase
     /// <response code="502">Error al contactar con el servicio RENIEC.</response>
     [HttpGet("reniec/{dni}")]
     [EnableRateLimiting("reniec")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<IActionResult> ConsultarReniec(string dni)
     {
         try
@@ -108,6 +124,7 @@ public class ClienteController : ControllerBase
     /// <param name="termino">Término de búsqueda (mínimo 2 caracteres).</param>
     [HttpGet("buscar")]
     [Authorize]
+    [ProducesResponseType(typeof(IEnumerable<ClienteResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> BuscarClientes([FromQuery] string termino)
     {
         if (string.IsNullOrWhiteSpace(termino) || termino.Length < 2)

@@ -1,0 +1,35 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: hotel-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${SA_PASSWORD:-Mar703server}"
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel-api
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=HotelDB;User Id=sa;Password=${SA_PASSWORD:-Mar703server};TrustServerCertificate=True
+      - Jwt__Key=${JWT_KEY:-obTi6lRmI72jFEi+dLHYrKpETi5wm6Dy2H6qMvY0O3A=}
+      - Jwt__Issuer=HotelGenericoApi
+      - Jwt__Audience=HotelGenericoApiClient
+      - VerificaPE__ApiKey=${VERIFICAPE_API_KEY}
+      - VerificaPE__BaseUrl=https://api.verificape.com/v2
+      - Cors__AllowedOrigins__0=${CORS_ORIGIN:-http://localhost:5173}
+    depends_on:
+      - sqlserver
+
+volumes:
+  sqlserver-data:
