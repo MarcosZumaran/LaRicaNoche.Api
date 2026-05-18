@@ -69,7 +69,7 @@ public static class TestDbContextFactory
             Apellidos = "Cliente"
         });
 
-        db.Configuracion.Add(new Configuracion
+        db.Configuraciones.Add(new Configuracion
         {
             IdConfiguracion = 1,
             Nombre = "Hotel Test",
