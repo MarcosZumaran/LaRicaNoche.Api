@@ -41,12 +41,10 @@ public class SetupService
         await _db.SaveChangesAsync();
     }
 
-    /// Crea los usuarios por defecto (admin, recepcion, limpieza) si no existen.
-    /// Para desarrollo y  primera instalación.
     public async Task CrearUsuariosPorDefectoAsync()
     {
-        // 1. Asegurar que los roles existen
-        var roles = new[] { "Administrador", "Recepcion", "Limpieza" };
+        // Asegurar que los roles existen
+        var roles = new[] { "Administrador", "Recepcionista", "Limpieza" };
         foreach (var nombreRol in roles)
         {
             if (!await _db.RolesUsuario.AnyAsync(r => r.Nombre == nombreRol))
@@ -56,34 +54,62 @@ public class SetupService
         }
         await _db.SaveChangesAsync();
 
-        // 2. Obtener IDs de los roles
+        // Obtener IDs de roles
         var rolAdmin = await _db.RolesUsuario.FirstAsync(r => r.Nombre == "Administrador");
-        var rolRecepcion = await _db.RolesUsuario.FirstAsync(r => r.Nombre == "Recepcion");
+        var rolRecepcion = await _db.RolesUsuario.FirstAsync(r => r.Nombre == "Recepcionista");
         var rolLimpieza = await _db.RolesUsuario.FirstAsync(r => r.Nombre == "Limpieza");
 
-        // 3. Crear usuarios por defecto si no existen
-        var usuariosPorDefecto = new (string Username, string Password, int IdRol)[]
+        // Definir usuarios por defecto
+        var usuariosPorDefecto = new (string Username, int IdRol)[]
         {
-            ("admin", "admin123", rolAdmin.IdRol),
-            ("recepcion", "recepcion123", rolRecepcion.IdRol),
-            ("limpieza", "limpieza123", rolLimpieza.IdRol)
+        ("admin", rolAdmin.IdRol),
+        ("recepcion", rolRecepcion.IdRol),
+        ("limpieza", rolLimpieza.IdRol)
         };
 
-        foreach (var (username, password, idRol) in usuariosPorDefecto)
+        using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            if (!await _db.Usuarios.AnyAsync(u => u.Username == username))
+            foreach (var (username, idRol) in usuariosPorDefecto)
             {
-                _db.Usuarios.Add(new Usuario
+                if (!await _db.Usuarios.AnyAsync(u => u.Username == username))
                 {
-                    Username = username,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-                    IdRol = idRol,
-                    FechaCreacion = DateTime.UtcNow,
-                    EstaActivo = true
-                });
-            }
-        }
+                    var password = GenerarPasswordSeguro();
+                    _db.Usuarios.Add(new Usuario
+                    {
+                        Username = username,
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                        IdRol = idRol,
+                        FechaCreacion = DateTime.UtcNow,
+                        EstaActivo = true,
+                        DebeCambiarPassword = true
+                    });
 
-        await _db.SaveChangesAsync();
+                    // Mostrar UNA SOLA VEZ en la consola
+                    Console.WriteLine("============================================");
+                    Console.WriteLine($"USUARIO CREADO: {username}");
+                    Console.WriteLine($"CONTRASEÑA TEMPORAL: {password}");
+                    Console.WriteLine("CAMBIAR INMEDIATAMENTE AL INICIAR SESIÓN.");
+                    Console.WriteLine("============================================");
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    private static string GenerarPasswordSeguro(int longitud = 16)
+    {
+        const string caracteresValidos = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*()_-+=";
+        var bytes = new byte[longitud];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        rng.GetBytes(bytes);
+        return new string(bytes.Select(b => caracteresValidos[b % caracteresValidos.Length]).ToArray());
     }
 }
