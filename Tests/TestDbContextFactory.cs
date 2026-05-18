@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using HotelGenericoApi.Data;
 using HotelGenericoApi.Models;
 
@@ -10,6 +11,7 @@ public static class TestDbContextFactory
     {
         var options = new DbContextOptionsBuilder<HotelDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         var db = new HotelDbContext(options);

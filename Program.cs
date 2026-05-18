@@ -152,6 +152,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -197,6 +203,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseResponseCompression();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -205,5 +212,6 @@ app.UseRateLimiter();
 // La ruta debe coincidir con el frontend: /hotelhub
 app.MapHub<HabitacionHub>("/hotelhub");
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();

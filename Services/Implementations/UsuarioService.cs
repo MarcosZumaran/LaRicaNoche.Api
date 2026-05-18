@@ -106,7 +106,7 @@ public class UsuarioService : IUsuarioService
         var entity = await _db.Usuarios.FindAsync(id);
         if (entity is null) return false;
 
-        _db.Usuarios.Remove(entity);
+        entity.EstaActivo = false;
         await _db.SaveChangesAsync();
         return true;
     }
