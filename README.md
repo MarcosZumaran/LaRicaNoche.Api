@@ -1,149 +1,159 @@
-# Hotel Generico API
+# Hotel Genérico API
 
-API REST del sistema **Hotel Generico**, diseñada para administrar la lógica principal del alojamiento y servir de soporte al frontend web.
+API REST de gestión hotelera desarrollada con **ASP.NET Core 10**, diseñada para administrar habitaciones, huéspedes, ventas, comprobantes electrónicos (SUNAT) y reportes operativos.
 
-Repositorio del frontend: https://github.com/MarcosZumaran/HotelGenerico.Web
-
----
-
-## Descripción
-
-Este backend está desarrollado con **ASP.NET Core Web API** y está orientado a centralizar la lógica de negocio del sistema.
-
-Se encarga de:
-
-- exponer endpoints para el frontend
-- manejar el acceso a datos
-- controlar la lógica del negocio
-- gestionar autenticación
-- soportar operaciones relacionadas con comprobantes, ventas y reportes
+Frontend: [HotelGenerico.Web](https://github.com/MarcosZumaran/HotelGenerico.Web)
 
 ---
 
-## Tecnologías utilizadas
+## Stack
 
 | Tecnología | Propósito |
 |---|---|
-| ASP.NET Core Web API | API principal |
-| Entity Framework Core | Acceso y persistencia de datos |
-| SQL Server | Motor de base de datos |
-| Mapster | Mapeo de objetos |
-| NLua | Ejecución de scripts dinámicos |
+| .NET 10 / ASP.NET Core | Framework principal |
+| Entity Framework Core 10 | ORM y acceso a datos |
+| SQL Server 2022 Express | Base de datos |
+| JWT Bearer | Autenticación stateless |
+| Swagger + Scalar | Documentación interactiva |
+| ClosedXML | Exportación Excel |
+| QuestPDF | Generación de PDF (comprobantes) |
+| NLua | Reglas de negocio dinámicas (impuestos) |
+| Riok.Mapperly | Mapeo automático de objetos (compile-time) |
+| BCrypt.Net-Next | Hashing de contraseñas |
+| xUnit + Moq | Tests unitarios y de integración |
 
 ---
 
-## Características
+## Arquitectura
 
-- Arquitectura orientada a servicios
-- Separación entre controladores, lógica y acceso a datos
-- Endpoints para los módulos principales del sistema
-- Integración con base de datos SQL Server
-- Base preparada para el consumo desde el frontend
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────┐
+│  Frontend   │────▶│  API (esta)  │────▶│ SQL Svr  │
+│  (Vercel)   │     │  :5000       │     │  :1433   │
+└─────────────┘     └──────┬───────┘     └──────────┘
+                           │
+                    ┌──────┴──────┐
+                    │  VerificaPE │
+                    │  (RENIEC)   │
+                    └─────────────┘
+```
+
+```
+HotelGenericoApi/
+├── Controllers/        # Endpoints REST
+├── Services/
+│   ├── Interfaces/     # Contratos
+│   └── Implementations/# Lógica de negocio
+├── Models/             # Entidades (POCOs)
+├── Data/               # DbContext + Fluent API
+├── DTOs/
+│   ├── Request/        # Payloads de entrada
+│   └── Response/       # Payloads de salida
+├── Mappings/           # Mappers (Riok.Mapperly)
+├── Middleware/          # ExceptionMiddleware
+├── JsonConverters/     # Custom JSON converters
+├── Hubs/               # SignalR (HabitacionHub)
+├── Migrations/         # Migraciones EF Core
+└── Scripts/            # Scripts Lua (impuestos)
+```
 
 ---
 
-## Requisitos previos
+## Requisitos
 
-- .NET SDK compatible con el proyecto
-- SQL Server
-- Visual Studio, Visual Studio Code o un editor compatible
-- Base de datos configurada correctamente
+- .NET SDK 10.0+
+- SQL Server (local o Docker)
+- (Opcional) Docker Desktop
 
 ---
 
-## Instalación
+## Inicio rápido (local)
 
 ```bash
 git clone https://github.com/MarcosZumaran/HotelGenericoApi.git
 cd HotelGenericoApi
+
+# restaurar dependencias
 dotnet restore
-```
 
----
+# configurar cadena de conexión en appsettings.Development.json
+# o usar variables de entorno
 
-## Configuración
+# aplicar migraciones
+dotnet ef database update
 
-Revisa el archivo `appsettings.json` y configura la cadena de conexión.
-
-Ejemplo:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=HotelGenerico;Trusted_Connection=True;TrustServerCertificate=True;"
-  }
-}
-```
-
-Si tu entorno usa usuario y contraseña, ajusta la cadena de conexión según corresponda.
-
----
-
-## Ejecución
-
-```bash
+# ejecutar
 dotnet run
 ```
+
+La API arranca en `http://localhost:5000`.  
+Swagger: [http://localhost:5000/swagger](http://localhost:5000/swagger)  
+Scalar: [http://localhost:5000/scalar/v1](http://localhost:5000/scalar/v1)
+
+### Seed automático
+
+En entorno `Development` se crean usuarios por defecto al iniciar:
+- **Admin** — `admin` / `Admin123!`
+- **Cajero** — `cajero` / `Cajero123!`
+
+---
+
+## Docker (producción local)
+
+```bash
+# clonar
+git clone https://github.com/MarcosZumaran/HotelGenericoApi.git
+cd HotelGenericoApi
+
+# iniciar SQL Server + API
+SA_PASSWORD=MiClaveSegura123 \
+JWT_KEY="<base64-de-32-bytes>" \
+VERIFICAPE_API_KEY=tu-api-key \
+CORS_ORIGIN=https://tudominio.vercel.app \
+docker compose up -d
+```
+
+La API queda en `http://localhost:5000`.
+
+Variables requeridas:
+
+| Variable | Descripción |
+|---|---|
+| `SA_PASSWORD` | Contraseña del SA de SQL Server |
+| `JWT_KEY` | Clave secreta JWT (256 bits en base64) |
+| `VERIFICAPE_API_KEY` | API key de VerificaPE (RENIEC) |
+| `CORS_ORIGIN` | URL del frontend (Vercel) |
 
 ---
 
 ## Endpoints principales
 
-Los módulos principales del sistema incluyen rutas orientadas a:
+| Método | Ruta | Módulo |
+|---|---|---|
+| POST | `/api/usuario/login` | Autenticación |
+| GET/POST | `/api/habitacion` | Habitaciones (CRUD) |
+| GET/POST | `/api/estancia` | Estancias / Check-in |
+| POST | `/api/estancia/{id}/checkout` | Check-out |
+| GET/POST | `/api/venta` | Ventas |
+| GET | `/api/reporte/cierre-caja` | Reporte diario |
+| GET | `/api/reporte/estado-habitaciones` | Estado de habitaciones |
+| GET | `/api/cliente/{doc}/reniec` | Consulta RENIEC |
+| GET | `/health` | Health check |
+| POST | `/api/setup` | Inicialización del sistema |
 
-- autenticación
-- habitaciones
-- clientes
-- estancias
-- productos
-- comprobantes
-- reportes
-- ventas
+Ver documentación completa en Swagger o Scalar.
 
 ---
 
-## Estructura general
+## Testing
 
-```text
-HotelGenericoApi/
-├── Controllers/
-├── Services/
-├── Repositories/
-├── Models/
-├── DTOs/
-├── Mappers/
-├── Config/
-└── Program.cs
+```bash
+# tests unitarios + integración
+dotnet test
 ```
 
 ---
 
-## Relación con el frontend
+## License
 
-Esta API fue creada para trabajar junto con la interfaz web del sistema.
-
-Frontend del proyecto:  
-https://github.com/MarcosZumaran/HotelGenerico.Web
-
-Flujo general:
-
-```text
-Frontend -> API -> Base de datos
-```
-
----
-
-## Nota importante
-
-> Este proyecto fue creado con fines de práctica institucional y no tiene fines comerciales.
-
-> La implementación puede seguir recibiendo mejoras en seguridad, validaciones y arquitectura.
-
----
-
-## Autor
-
-MarcosZumaran
-
-Repositorio:  
-https://github.com/MarcosZumaran/HotelGenericoApi
+Proyecto académico sin fines comerciales.
