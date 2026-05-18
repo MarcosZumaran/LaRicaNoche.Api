@@ -13,11 +13,7 @@ public partial class ClienteMapper
     [MapperIgnoreTarget(nameof(Cliente.IdCliente))]
     [MapperIgnoreTarget(nameof(Cliente.FechaRegistro))]
     [MapperIgnoreTarget(nameof(Cliente.FechaVerificacionReniec))]
-    [MapperIgnoreTarget(nameof(Cliente.TipoDocumentoRel))]
-    [MapperIgnoreTarget(nameof(Cliente.Estancias))]
-    [MapperIgnoreTarget(nameof(Cliente.Huespedes))]
-    [MapperIgnoreTarget(nameof(Cliente.Reservas))]
-    [MapperIgnoreTarget(nameof(Cliente.Ventas))]
+    [MapperIgnoreTarget(nameof(Cliente.TipoDocumentoNavigation))]
     public partial Cliente FromCreate(ClienteCreateDto dto);
 
     [MapperIgnoreTarget(nameof(Cliente.IdCliente))]
@@ -25,10 +21,6 @@ public partial class ClienteMapper
     [MapperIgnoreTarget(nameof(Cliente.Documento))]
     [MapperIgnoreTarget(nameof(Cliente.FechaRegistro))]
     [MapperIgnoreTarget(nameof(Cliente.FechaVerificacionReniec))]
-    [MapperIgnoreTarget(nameof(Cliente.TipoDocumentoRel))]
-    [MapperIgnoreTarget(nameof(Cliente.Estancias))]
-    [MapperIgnoreTarget(nameof(Cliente.Huespedes))]
-    [MapperIgnoreTarget(nameof(Cliente.Reservas))]
-    [MapperIgnoreTarget(nameof(Cliente.Ventas))]
+    [MapperIgnoreTarget(nameof(Cliente.TipoDocumentoNavigation))]
     public partial void UpdateFromDto(ClienteUpdateDto dto, Cliente entity);
 }

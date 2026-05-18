@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using HotelGenericoApi.Mappings;
@@ -6,7 +8,6 @@ using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using HotelGenericoApi.Hubs;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,10 +15,8 @@ using Microsoft.AspNetCore.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 // DbContext
-builder.Services.AddDbContext<HotelDbContext>(options => 
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-    .UseSnakeCaseNamingConvention()    
-);
+builder.Services.AddDbContext<HotelDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // NLua
 builder.Services.AddSingleton<ILuaService, LuaService>();
@@ -58,6 +57,14 @@ builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IConfiguracionHotelService, ConfiguracionHotelService>();
 builder.Services.AddScoped<IValidadorEstadoService, ValidadorEstadoService>();
 
+// HttpClient tipificado para RENIEC
+builder.Services.AddHttpClient<IReniecService, ReniecService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["VerificaPE:BaseUrl"]!);
+    client.DefaultRequestHeaders.Authorization =
+        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", builder.Configuration["VerificaPE:ApiKey"]);
+});
+
 // Setup
 builder.Services.AddScoped<SetupService>();
 
@@ -68,6 +75,7 @@ builder.Services.AddScoped<IDbTransactionManager, SqlServerTransactionManager>()
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
     options.AddPolicy("login", context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -78,6 +86,32 @@ builder.Services.AddRateLimiter(options =>
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             }));
+
+    options.AddPolicy("reniec", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    options.AddPolicy("global", context =>
+    {
+        var userId = context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? context.Connection.RemoteIpAddress?.ToString()
+                     ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(userId,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 10
+            });
+    });
 });
 
 // JWT
@@ -118,9 +152,23 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+    c.SwaggerDoc("v1", new()
+    {
+        Title = "Hotel Genérico API",
+        Description = "API para gestión de hotel, huéspedes y facturación SUNAT",
+        Version = "v1"
+    });
+});
 
 var app = builder.Build();
+
+app.UseMiddleware<HotelGenericoApi.Middleware.ExceptionMiddleware>();
 
 // Seed de usuarios por defecto en desarrollo
 if (app.Environment.IsDevelopment())
@@ -141,14 +189,18 @@ if (app.Environment.IsDevelopment())
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    app.MapScalarApiReference(options =>
+    {
+        options.WithOpenApiRoutePattern("/swagger/v1/swagger.json");
+    });
 }
 
 app.UseCors();
-app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 // La ruta debe coincidir con el frontend: /hotelhub
 app.MapHub<HabitacionHub>("/hotelhub");
