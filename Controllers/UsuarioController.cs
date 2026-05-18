@@ -25,6 +25,7 @@ public class UsuarioController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Obtiene todos los usuarios del sistema.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -32,6 +33,8 @@ public class UsuarioController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Obtiene un usuario por su ID.</summary>
+    /// <param name="id">ID del usuario.</param>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -39,6 +42,8 @@ public class UsuarioController : ControllerBase
         return result is not null ? Ok(result) : NotFound();
     }
 
+    /// <summary>Crea un nuevo usuario en el sistema.</summary>
+    /// <param name="dto">Datos del usuario.</param>
     [HttpPost]
     public async Task<IActionResult> Create(UsuarioCreateDto dto)
     {
@@ -46,6 +51,9 @@ public class UsuarioController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.IdUsuario }, result);
     }
 
+    /// <summary>Actualiza los datos de un usuario existente.</summary>
+    /// <param name="id">ID del usuario.</param>
+    /// <param name="dto">Datos actualizados.</param>
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UsuarioUpdateDto dto)
     {
@@ -53,6 +61,8 @@ public class UsuarioController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
+    /// <summary>Elimina un usuario por su ID.</summary>
+    /// <param name="id">ID del usuario.</param>
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -60,6 +70,10 @@ public class UsuarioController : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
+    /// <summary>Inicia sesión y devuelve un token JWT.</summary>
+    /// <param name="dto">Credenciales de acceso.</param>
+    /// <response code="200">Token JWT generado exitosamente.</response>
+    /// <response code="401">Credenciales inválidas.</response>
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("login")]

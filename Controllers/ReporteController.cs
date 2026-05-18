@@ -1,64 +1,47 @@
-using Microsoft.AspNetCore.Mvc;
-using HotelGenericoApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.Services.Interfaces;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[EnableRateLimiting("global")]
 public class ReporteController : ControllerBase
 {
-    private readonly IReporteService _service;
-    private readonly ICierreCajaEnvioService _cierreCajaEnvioService;
+    private readonly IReporteService _reporteService;
 
-
-    public ReporteController(IReporteService service, ICierreCajaEnvioService cierreCajaEnvioService)
+    public ReporteController(IReporteService reporteService)
     {
-        _service = service;
-        _cierreCajaEnvioService = cierreCajaEnvioService;
+        _reporteService = reporteService;
     }
 
+    /// <summary>Obtiene el cierre de caja diario con detalle de ingresos y egresos.</summary>
+    /// <param name="fecha">Fecha del cierre (yyyy-MM-dd).</param>
     [HttpGet("cierre-caja")]
-    public async Task<IActionResult> CierreCaja([FromQuery] DateOnly? fecha)
-        => Ok(await _service.GetCierreCajaAsync(fecha));
+    public async Task<ActionResult<List<VCierreCajaDiario>>> GetCierreCaja([FromQuery] DateOnly fecha)
+    {
+        var result = await _reporteService.GetCierreCajaAsync(fecha);
+        return Ok(result);
+    }
 
+    /// <summary>Obtiene el estado actual de todas las habitaciones.</summary>
     [HttpGet("estado-habitaciones")]
-    public async Task<IActionResult> EstadoHabitaciones()
-        => Ok(await _service.GetEstadoHabitacionesAsync());
-
-    [HttpGet("cierre-caja/estado-envio")]
-    public async Task<IActionResult> EstadoEnvioCierreCaja([FromQuery] DateOnly fecha)
+    public async Task<ActionResult<List<VEstadoHabitacion>>> GetEstadoHabitaciones()
     {
-        var estado = await _cierreCajaEnvioService.GetEstadoAsync(fecha);
-        return Ok(estado);
+        var result = await _reporteService.GetEstadoHabitacionesAsync();
+        return Ok(result);
     }
 
-    [HttpPost("cierre-caja/enviar")]
-    public async Task<IActionResult> EnviarCierreCaja([FromQuery] DateOnly fecha)
+    /// <summary>Obtiene el reporte de ocupación diaria.</summary>
+    /// <param name="fecha">Fecha del reporte (yyyy-MM-dd).</param>
+    [HttpGet("ocupacion-diaria")]
+    public async Task<ActionResult<List<VOcupacionDiaria>>> GetOcupacionDiaria([FromQuery] DateOnly fecha)
     {
-        var result = await _cierreCajaEnvioService.MarcarComoEnviadoAsync(fecha);
-        return result ? NoContent() : BadRequest();
-    }
-
-    [HttpGet("cierre-caja/excel")]
-    public async Task<IActionResult> ExportarCierreCajaExcel([FromQuery] DateOnly? fecha)
-    {
-        var bytes = await _service.ExportarCierreCajaExcelAsync(fecha);
-        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"cierre_caja_{fecha:yyyyMMdd}.xlsx");
-    }
-
-    [HttpGet("estado-habitaciones/excel")]
-    public async Task<IActionResult> ExportarEstadoHabitacionesExcel()
-    {
-        var bytes = await _service.ExportarEstadoHabitacionesExcelAsync();
-        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "estado_habitaciones.xlsx");
-    }
-
-    [HttpGet("top-productos")]
-    public async Task<IActionResult> GetTopProductos([FromQuery] int dias = 30)
-    {
-        var result = await _service.GetTopProductosAsync(dias);
+        var result = await _reporteService.GetOcupacionDiariaAsync(fecha);
         return Ok(result);
     }
 }

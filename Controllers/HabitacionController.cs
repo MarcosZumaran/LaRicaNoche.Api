@@ -1,108 +1,86 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
-using HotelGenericoApi.DTOs.Request;
-using HotelGenericoApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.Services.Interfaces;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[EnableRateLimiting("global")]
 public class HabitacionController : ControllerBase
 {
-    private readonly IHabitacionService _service;
+    private readonly IHabitacionService _habitacionService;
 
-    public HabitacionController(IHabitacionService service)
+    public HabitacionController(IHabitacionService habitacionService)
     {
-        _service = service;
+        _habitacionService = habitacionService;
     }
 
-    private int? ObtenerIdUsuario()
-    {
-        var claim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (claim is null) return null;
-        return int.TryParse(claim.Value, out int id) ? id : null;
-    }
-
+    /// <summary>Obtiene todas las habitaciones registradas.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<List<Habitacion>>> GetAll()
     {
-        var result = await _service.GetAllAsync();
-        return Ok(result);
+        var habitaciones = await _habitacionService.GetAllAsync();
+        return Ok(habitaciones);
     }
 
+    /// <summary>Obtiene una habitación por su ID.</summary>
+    /// <param name="id">ID de la habitación.</param>
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<Habitacion>> GetById(int id)
     {
-        var result = await _service.GetByIdAsync(id);
-        return result is not null ? Ok(result) : NotFound();
+        var habitacion = await _habitacionService.GetByIdAsync(id);
+        if (habitacion == null)
+            return NotFound();
+        return Ok(habitacion);
     }
 
+    /// <summary>Crea una nueva habitación.</summary>
+    /// <param name="habitacion">Datos de la habitación.</param>
     [HttpPost]
-    public async Task<IActionResult> Create(HabitacionCreateDto dto)
+    public async Task<ActionResult<Habitacion>> Create([FromBody] Habitacion habitacion)
     {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            var result = await _service.CreateAsync(dto, idUsuario);
-            return CreatedAtAction(nameof(GetById), new { id = result.IdHabitacion }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { mensaje = ex.Message });
-        }
+        var result = await _habitacionService.CreateAsync(habitacion);
+        return CreatedAtAction(nameof(GetById), new { id = result.IdHabitacion }, result);
     }
 
+    /// <summary>Actualiza los datos de una habitación existente.</summary>
+    /// <param name="id">ID de la habitación.</param>
+    /// <param name="habitacionActualizada">Datos actualizados.</param>
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, HabitacionUpdateDto dto)
+    public async Task<ActionResult<Habitacion>> Update(int id, [FromBody] Habitacion habitacionActualizada)
     {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            var updated = await _service.UpdateAsync(id, dto, idUsuario);
-            return updated ? NoContent() : NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpPatch("{id}")]
-    public async Task<IActionResult> Patch(int id, HabitacionUpdateDto dto)
-    {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            var updated = await _service.UpdateAsync(id, dto, idUsuario);
-            return updated ? NoContent() : NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        try
-        {
-            var deleted = await _service.DeleteAsync(id);
-            return deleted ? NoContent() : NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpGet("estado-actual")]
-    public async Task<IActionResult> GetEstadoActual()
-    {
-        var rolUsuario = User.FindFirst(ClaimTypes.Role)?.Value;
-        var result = await _service.GetEstadoActualAsync(rolUsuario);
+        var result = await _habitacionService.UpdateAsync(id, habitacionActualizada);
+        if (result == null)
+            return NotFound();
         return Ok(result);
+    }
+
+    /// <summary>Elimina una habitación por su ID.</summary>
+    /// <param name="id">ID de la habitación.</param>
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        var result = await _habitacionService.DeleteAsync(id);
+        if (!result)
+            return NotFound();
+        return NoContent();
+    }
+
+    /// <summary>Cambia el estado de una habitación validando transiciones permitidas.</summary>
+    /// <param name="idHabitacion">ID de la habitación.</param>
+    /// <param name="idNuevoEstado">ID del nuevo estado.</param>
+    /// <param name="idUsuario">ID del usuario que realiza el cambio.</param>
+    /// <param name="observacion">Observación opcional.</param>
+    [HttpPatch("{idHabitacion}/estado")]
+    public async Task<ActionResult> CambiarEstado(int idHabitacion, [FromQuery] int idNuevoEstado, [FromQuery] int idUsuario, [FromQuery] string? observacion = null)
+    {
+        var result = await _habitacionService.CambiarEstadoAsync(idHabitacion, idNuevoEstado, idUsuario, observacion);
+        if (!result)
+            return NotFound();
+        return NoContent();
     }
 }

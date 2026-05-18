@@ -1,56 +1,60 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
-using HotelGenericoApi.DTOs.Request;
-using HotelGenericoApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.Services.Interfaces;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[EnableRateLimiting("global")]
 public class VentaController : ControllerBase
 {
-    private readonly IVentaService _service;
+    private readonly IVentaService _ventaService;
 
-    public VentaController(IVentaService service)
+    public VentaController(IVentaService ventaService)
     {
-        _service = service;
+        _ventaService = ventaService;
     }
 
-    private int? ObtenerIdUsuario()
-    {
-        var claim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (claim is null) return null;
-        return int.TryParse(claim.Value, out int id) ? id : null;
-    }
-
+    /// <summary>Obtiene todas las ventas registradas.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    public async Task<ActionResult<List<Venta>>> GetAll()
     {
-        var result = await _service.GetPagedAsync(page, pageSize);
-        return Ok(result);
+        var ventas = await _ventaService.GetAllAsync();
+        return Ok(ventas);
     }
 
+    /// <summary>Obtiene una venta por su ID con ítems y producto.</summary>
+    /// <param name="id">ID de la venta.</param>
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<Venta>> GetById(int id)
     {
-        var result = await _service.GetByIdAsync(id);
-        return result is not null ? Ok(result) : NotFound();
+        var venta = await _ventaService.GetByIdAsync(id);
+        if (venta == null)
+            return NotFound();
+        return Ok(venta);
     }
 
+    /// <summary>Registra una nueva venta con sus ítems.</summary>
+    /// <param name="venta">Datos de la venta incluyendo ítems.</param>
     [HttpPost]
-    public async Task<IActionResult> Create(VentaCreateDto dto)
+    public async Task<ActionResult<Venta>> Create([FromBody] Venta venta)
     {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            var result = await _service.CreateAsync(dto, idUsuario);
-            return CreatedAtAction(nameof(GetById), new { id = result.IdVenta }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
+        var result = await _ventaService.CreateAsync(venta);
+        return CreatedAtAction(nameof(GetById), new { id = result.IdVenta }, result);
+    }
+
+    /// <summary>Elimina una venta por su ID.</summary>
+    /// <param name="id">ID de la venta.</param>
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        var result = await _ventaService.DeleteAsync(id);
+        if (!result)
+            return NotFound();
+        return NoContent();
     }
 }

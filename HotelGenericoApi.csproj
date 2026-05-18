@@ -6,7 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <NoWarn>RMG012;RMG020;RMG013;RMG066</NoWarn>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);RMG012;RMG020;RMG013;RMG066;1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,6 +38,7 @@
     <PackageReference Include="QuestPDF" Version="2026.2.4" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.14.4" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
   </ItemGroup>
 
 </Project>

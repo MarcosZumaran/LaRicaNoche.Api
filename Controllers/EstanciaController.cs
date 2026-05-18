@@ -1,190 +1,85 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
-using HotelGenericoApi.DTOs.Request;
-using HotelGenericoApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using HotelGenericoApi.Models;
+using HotelGenericoApi.Services.Interfaces;
 
 namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[EnableRateLimiting("global")]
 public class EstanciaController : ControllerBase
 {
-    private readonly IEstanciaService _service;
+    private readonly IEstanciaService _estanciaService;
 
-    public EstanciaController(IEstanciaService service)
+    public EstanciaController(IEstanciaService estanciaService)
     {
-        _service = service;
+        _estanciaService = estanciaService;
     }
 
-    private int? ObtenerIdUsuario()
-    {
-        var claim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (claim is null) return null;
-        return int.TryParse(claim.Value, out int id) ? id : null;
-    }
-
+    /// <summary>Obtiene todas las estancias registradas.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<List<Estancia>>> GetAll()
     {
-        var result = await _service.GetAllAsync();
+        var estancias = await _estanciaService.GetAllAsync();
+        return Ok(estancias);
+    }
+
+    /// <summary>Obtiene una estancia por su ID con detalles completos.</summary>
+    /// <param name="id">ID de la estancia.</param>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Estancia>> GetById(int id)
+    {
+        var estancia = await _estanciaService.GetByIdAsync(id);
+        if (estancia == null)
+            return NotFound();
+        return Ok(estancia);
+    }
+
+    /// <summary>Registra un check-in creando una nueva estancia y marcando la habitación como ocupada.</summary>
+    /// <param name="estancia">Datos de la estancia.</param>
+    [HttpPost]
+    public async Task<ActionResult<Estancia>> Create([FromBody] Estancia estancia)
+    {
+        var result = await _estanciaService.CreateAsync(estancia);
+        return CreatedAtAction(nameof(GetById), new { id = result.IdEstancia }, result);
+    }
+
+    /// <summary>Registra el check-out de una estancia, liberando la habitación a limpieza.</summary>
+    /// <param name="idEstancia">ID de la estancia.</param>
+    /// <param name="idUsuario">ID del usuario que realiza el checkout.</param>
+    [HttpPost("{idEstancia}/checkout")]
+    public async Task<ActionResult<Estancia>> Checkout(int idEstancia, [FromQuery] int idUsuario)
+    {
+        var result = await _estanciaService.CheckoutAsync(idEstancia, idUsuario);
+        if (result == null)
+            return NotFound();
         return Ok(result);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    /// <summary>Añade un huésped adicional a una estancia existente.</summary>
+    /// <param name="idEstancia">ID de la estancia.</param>
+    /// <param name="huesped">Datos del huésped.</param>
+    [HttpPost("{idEstancia}/huesped")]
+    public async Task<ActionResult> AddHuesped(int idEstancia, [FromBody] Huesped huesped)
     {
-        var result = await _service.GetByIdAsync(id);
-        return result is not null ? Ok(result) : NotFound();
+        var result = await _estanciaService.AddHuespedAsync(idEstancia, huesped);
+        if (!result)
+            return BadRequest();
+        return Ok();
     }
 
-    [HttpPost("checkin")]
-    public async Task<IActionResult> CheckIn(CheckInDto dto)
+    /// <summary>Registra un consumo (producto) en una estancia activa.</summary>
+    /// <param name="idEstancia">ID de la estancia.</param>
+    /// <param name="item">Detalle del consumo (producto, cantidad, precio).</param>
+    [HttpPost("{idEstancia}/consumo")]
+    public async Task<ActionResult> AddConsumo(int idEstancia, [FromBody] ItemEstancia item)
     {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            var result = await _service.CheckInAsync(dto, idUsuario);
-            return CreatedAtAction(nameof(GetById), new { id = result.IdEstancia }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpPost("{id}/checkout")]
-    public async Task<IActionResult> CheckOut(int id)
-    {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            var result = await _service.CheckOutAsync(id, idUsuario);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-    [HttpPost("{id}/consumo")]
-    public async Task<IActionResult> RegistrarConsumo(int id, ConsumoEstanciaCreateDto dto)
-    {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            var result = await _service.RegistrarConsumoAsync(id, dto, idUsuario);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpPost("reserva")]
-    public async Task<IActionResult> CrearReserva(ReservaCreateDto dto)
-    {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            var result = await _service.CrearReservaAsync(dto, idUsuario);
-            return CreatedAtAction(nameof(GetReservaById), new { id = result.IdReserva }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            // Si es un conflicto de solapamiento, devolver 409 Conflict
-            if (ex.Message.Contains("ya está reservada") || ex.Message.Contains("solap"))
-                return Conflict(new { mensaje = ex.Message });
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpGet("reserva/{id}")]
-    public async Task<IActionResult> GetReservaById(int id)
-    {
-        try
-        {
-            var result = await _service.GetReservaByIdAsync(id);
-            return result is not null ? Ok(result) : NotFound(new { mensaje = "Reserva no encontrada." });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpGet("reservas/{idHabitacion}")]
-    public async Task<IActionResult> GetReservasPorHabitacion(int idHabitacion)
-    {
-        try
-        {
-            var result = await _service.GetReservasPorHabitacionAsync(idHabitacion);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpGet("{id}/consumos")]
-    public async Task<IActionResult> GetConsumos(int id)
-    {
-        try
-        {
-            var result = await _service.GetConsumosAsync(id);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpPut("{idEstancia}/consumo/{idItem}")]
-    public async Task<IActionResult> ActualizarConsumo(int idEstancia, int idItem, [FromBody] ActualizarConsumoDto dto)
-    {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            await _service.ActualizarConsumoAsync(idEstancia, idItem, dto.Cantidad, idUsuario);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpDelete("{idEstancia}/consumo/{idItem}")]
-    public async Task<IActionResult> EliminarConsumo(int idEstancia, int idItem)
-    {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            await _service.EliminarConsumoAsync(idEstancia, idItem, idUsuario);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-    }
-
-    [HttpPut("reserva/{id}/cancelar")]
-    public async Task<IActionResult> CancelarReserva(int id)
-    {
-        try
-        {
-            var idUsuario = ObtenerIdUsuario();
-            await _service.CancelarReservaAsync(id, idUsuario);
-            return Ok(new { mensaje = "Reserva cancelada correctamente." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
+        var result = await _estanciaService.AddConsumoAsync(idEstancia, item);
+        if (!result)
+            return BadRequest();
+        return Ok();
     }
 }

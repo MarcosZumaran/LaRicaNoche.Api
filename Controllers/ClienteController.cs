@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -8,18 +9,21 @@ namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "Administrador,Recepcionista")]
 public class ClienteController : ControllerBase
 {
     private readonly IClienteService _service;
-    private readonly IConfiguration _configuration;
+    private readonly IReniecService _reniecService;
 
-    public ClienteController(IClienteService service, IConfiguration configuration)
+    public ClienteController(IClienteService service, IReniecService reniecService)
     {
         _service = service;
-        _configuration = configuration;
+        _reniecService = reniecService;
     }
 
+    /// <summary>Obtiene todos los clientes registrados con paginación.</summary>
+    /// <param name="page">Número de página (por defecto 1).</param>
+    /// <param name="pageSize">Tamaño de página (por defecto 10).</param>
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
@@ -27,6 +31,8 @@ public class ClienteController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Obtiene un cliente por su ID.</summary>
+    /// <param name="id">ID del cliente.</param>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -34,6 +40,9 @@ public class ClienteController : ControllerBase
         return result is not null ? Ok(result) : NotFound();
     }
 
+    /// <summary>Obtiene un cliente por tipo y número de documento.</summary>
+    /// <param name="tipo">Tipo de documento (1=DNI, 6=RUC, etc.).</param>
+    /// <param name="documento">Número de documento.</param>
     [HttpGet("documento/{tipo}/{documento}")]
     public async Task<IActionResult> GetByDocumento(string tipo, string documento)
     {
@@ -41,6 +50,8 @@ public class ClienteController : ControllerBase
         return result is not null ? Ok(result) : NotFound();
     }
 
+    /// <summary>Crea un nuevo cliente.</summary>
+    /// <param name="dto">Datos del cliente.</param>
     [HttpPost]
     public async Task<IActionResult> Create(ClienteCreateDto dto)
     {
@@ -55,6 +66,9 @@ public class ClienteController : ControllerBase
         }
     }
 
+    /// <summary>Actualiza los datos de un cliente existente.</summary>
+    /// <param name="id">ID del cliente.</param>
+    /// <param name="dto">Datos actualizados.</param>
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, ClienteUpdateDto dto)
     {
@@ -62,6 +76,8 @@ public class ClienteController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
+    /// <summary>Elimina un cliente por su ID.</summary>
+    /// <param name="id">ID del cliente.</param>
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -69,24 +85,27 @@ public class ClienteController : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
-
-    // Endpoint para consultar datos de RENIEC mediante VerificaPE
+    /// <summary>Consulta los datos de un DNI en RENIEC (VerificaPE).</summary>
+    /// <param name="dni">Número de DNI (8 dígitos).</param>
+    /// <response code="200">Datos encontrados correctamente.</response>
+    /// <response code="502">Error al contactar con el servicio RENIEC.</response>
     [HttpGet("reniec/{dni}")]
+    [EnableRateLimiting("reniec")]
     public async Task<IActionResult> ConsultarReniec(string dni)
     {
-        var apiKey = _configuration["VerificaPE:ApiKey"];
-        var baseUrl = _configuration["VerificaPE:BaseUrl"];
-
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
-
-        var response = await httpClient.GetAsync($"{baseUrl}/dni/{dni}");
-        var content = await response.Content.ReadAsStringAsync();
-
-        return StatusCode((int)response.StatusCode, content);
+        try
+        {
+            var result = await _reniecService.ConsultarDniAsync(dni);
+            return Ok(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(502, new { mensaje = "Error al consultar RENIEC", detalle = ex.Message });
+        }
     }
 
+    /// <summary>Busca clientes por nombre, documento u otros criterios.</summary>
+    /// <param name="termino">Término de búsqueda (mínimo 2 caracteres).</param>
     [HttpGet("buscar")]
     [Authorize]
     public async Task<IActionResult> BuscarClientes([FromQuery] string termino)
