@@ -21,7 +21,7 @@ namespace HotelGenericoApi.Services.Implementations
 
         public async Task<CierreCajaEnvioDto> GetEstadoAsync(DateOnly fecha)
         {
-            var envio = await _db.CierreCajaEnvios
+            var envio = await _db.CierresCajaEnvio
                 .Include(e => e.EstadoSunat)
                 .FirstOrDefaultAsync(e => e.Fecha == fecha);
 
@@ -41,7 +41,7 @@ namespace HotelGenericoApi.Services.Implementations
 
         public async Task<bool> MarcarComoEnviadoAsync(DateOnly fecha)
         {
-            var envio = await _db.CierreCajaEnvios.FindAsync(fecha);
+            var envio = await _db.CierresCajaEnvio.FindAsync(fecha);
 
             if (envio == null)
             {
@@ -53,7 +53,7 @@ namespace HotelGenericoApi.Services.Implementations
                     IntentosEnvio = 1,
                     HashXml = "hash_simulado"
                 };
-                _db.CierreCajaEnvios.Add(envio);
+                _db.CierresCajaEnvio.Add(envio);
             }
             else
             {

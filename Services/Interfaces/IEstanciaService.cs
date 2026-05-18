@@ -1,20 +1,14 @@
-using HotelGenericoApi.DTOs.Request;
-using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Models;
 
-namespace HotelGenericoApi.Services.Interfaces;
-
-public interface IEstanciaService
+namespace HotelGenericoApi.Services.Interfaces
 {
-    Task<IEnumerable<EstanciaResponseDto>> GetAllAsync();
-    Task<EstanciaResponseDto?> GetByIdAsync(int id);
-    Task<EstanciaResponseDto> CheckInAsync(CheckInDto dto, int? idUsuario);
-    Task<EstanciaResponseDto> CheckOutAsync(int idEstancia, int? idUsuario);
-    Task<EstanciaResponseDto> RegistrarConsumoAsync(int idEstancia, ConsumoEstanciaCreateDto dto, int? idUsuario);
-    Task<ReservaResponseDto> CrearReservaAsync(ReservaCreateDto dto, int? idUsuario);
-    Task<ReservaResponseDto?> GetReservaByIdAsync(int id);
-    Task<IEnumerable<ReservaResponseDto>> GetReservasPorHabitacionAsync(int idHabitacion);
-    Task<IEnumerable<ItemConsumoResponseDto>> GetConsumosAsync(int idEstancia);
-    Task ActualizarConsumoAsync(int idEstancia, int idItem, int nuevaCantidad, int? idUsuario);
-    Task EliminarConsumoAsync(int idEstancia, int idItem, int? idUsuario);
-    Task CancelarReservaAsync(int idReserva, int? idUsuario);
+    public interface IEstanciaService
+    {
+        Task<List<Estancia>> GetAllAsync();
+        Task<Estancia?> GetByIdAsync(int id);
+        Task<Estancia> CreateAsync(Estancia estancia);
+        Task<Estancia?> CheckoutAsync(int idEstancia, int idUsuario);
+        Task<bool> AddHuespedAsync(int idEstancia, Huesped huesped);
+        Task<bool> AddConsumoAsync(int idEstancia, ItemEstancia item);
+    }
 }

@@ -1,264 +1,120 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using HotelGenericoApi.Data;
-using HotelGenericoApi.DTOs.Request;
-using HotelGenericoApi.DTOs.Response;
-using HotelGenericoApi.Mappings;
-using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Models;
-using HotelGenericoApi.Models.Exceptions;
-using HotelGenericoApi.Hubs;
-using Microsoft.AspNetCore.SignalR;
+using HotelGenericoApi.Services.Interfaces;
 
-namespace HotelGenericoApi.Services.Implementations
+namespace HotelGenericoApi.Services.Implementations;
+
+public class HabitacionService : IHabitacionService
 {
-    public class HabitacionService : IHabitacionService
+    private readonly HotelDbContext _db;
+    private readonly ILogger<HabitacionService> _logger;
+
+    public HabitacionService(HotelDbContext db, ILogger<HabitacionService> logger)
     {
-        private readonly HotelDbContext _db;
-        private readonly HabitacionMapper _mapper;
-        private readonly IValidadorEstadoService _validadorEstadoService;
-        private readonly Microsoft.AspNetCore.SignalR.IHubContext<HabitacionHub> _hubContext;
+        _db = db;
+        _logger = logger;
+    }
 
-        public HabitacionService(HotelDbContext db, HabitacionMapper mapper, IValidadorEstadoService validador, Microsoft.AspNetCore.SignalR.IHubContext<HabitacionHub> hubContext)
+    public async Task<List<Habitacion>> GetAllAsync()
+    {
+        return await _db.Habitaciones
+            .Include(h => h.Tipo)
+            .Include(h => h.Estado)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<Habitacion?> GetByIdAsync(int id)
+    {
+        return await _db.Habitaciones
+            .Include(h => h.Tipo)
+            .Include(h => h.Estado)
+            .FirstOrDefaultAsync(h => h.IdHabitacion == id);
+    }
+
+    public async Task<Habitacion> CreateAsync(Habitacion habitacion)
+    {
+        _db.Habitaciones.Add(habitacion);
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Habitación {Numero} creada", habitacion.NumeroHabitacion);
+        return habitacion;
+    }
+
+    public async Task<Habitacion?> UpdateAsync(int id, Habitacion habitacionActualizada)
+    {
+        var existente = await _db.Habitaciones.FindAsync(id);
+        if (existente == null) return null;
+
+        _db.Entry(existente).CurrentValues.SetValues(habitacionActualizada);
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Habitación {Numero} actualizada", existente.NumeroHabitacion);
+        return existente;
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var habitacion = await _db.Habitaciones.FindAsync(id);
+        if (habitacion == null) return false;
+
+        _db.Habitaciones.Remove(habitacion);
+        await _db.SaveChangesAsync();
+        _logger.LogWarning("Habitación {Numero} eliminada", habitacion.NumeroHabitacion);
+        return true;
+    }
+
+    public async Task<bool> CambiarEstadoAsync(int idHabitacion, int idNuevoEstado, int idUsuario, string? observacion = null)
+    {
+        var habitacion = await _db.Habitaciones
+            .Include(h => h.Estado)
+            .FirstOrDefaultAsync(h => h.IdHabitacion == idHabitacion);
+
+        if (habitacion == null) return false;
+
+        var estadoAnterior = habitacion.IdEstado;
+        var estadoNuevo = await _db.EstadosHabitacion.FindAsync(idNuevoEstado);
+        if (estadoNuevo == null) return false;
+
+        var transicionValida = await _db.TransicionesEstado
+            .AnyAsync(t => t.IdEstadoActual == estadoAnterior && t.IdEstadoSiguiente == idNuevoEstado);
+
+        if (!transicionValida)
         {
-            _db = db;
-            _mapper = mapper;
-            _validadorEstadoService = validador;
-            _hubContext = hubContext;
+            _logger.LogWarning("Transición de estado no permitida: {Anterior} -> {Nuevo} en habitación {Id}",
+                estadoAnterior, idNuevoEstado, idHabitacion);
+            throw new InvalidOperationException($"No se puede cambiar de estado '{estadoAnterior}' a '{idNuevoEstado}'.");
         }
 
-        public async Task<IEnumerable<HabitacionResponseDto>> GetAllAsync()
+        using var transaction = await _db.Database.BeginTransactionAsync();
+        try
         {
-            var entities = await _db.Habitaciones
-                .Include(h => h.TipoHabitacion)
-                .Include(h => h.Estado)
-                .AsNoTracking()
-                .ToListAsync();
+            habitacion.IdEstado = idNuevoEstado;
+            habitacion.FechaUltimoCambio = DateTime.UtcNow;
+            habitacion.UsuarioCambio = idUsuario;
 
-            return entities.Select(MapToResponse);
-        }
+            var historial = new HistorialEstadoHabitacion
+            {
+                IdHabitacion = idHabitacion,
+                IdEstadoAnterior = estadoAnterior,
+                IdEstadoNuevo = idNuevoEstado,
+                FechaCambio = DateTime.UtcNow,
+                IdUsuario = idUsuario,
+                Observacion = observacion
+            };
 
-        public async Task<HabitacionResponseDto?> GetByIdAsync(int id)
-        {
-            var entity = await _db.Habitaciones
-                .Include(h => h.TipoHabitacion)
-                .Include(h => h.Estado)
-                .FirstOrDefaultAsync(h => h.IdHabitacion == id);
-
-            return entity is not null ? MapToResponse(entity) : null;
-        }
-
-        public async Task<HabitacionResponseDto> CreateAsync(HabitacionCreateDto dto, int? idUsuario)
-        {
-            bool existe = await _db.Habitaciones.AnyAsync(h => h.NumeroHabitacion == dto.NumeroHabitacion);
-            if (existe)
-                throw new BusinessRuleViolationException(BusinessErrorCode.HabitacionDuplicate, "Ya existe una habitación con ese número.");
-
-            var entity = _mapper.FromCreate(dto);
-            entity.FechaUltimoCambio = DateTime.UtcNow;
-            entity.UsuarioCambio = idUsuario;
-
-            _db.Habitaciones.Add(entity);
+            _db.HistorialEstadoHabitaciones.Add(historial);
             await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
 
-            var nuevoEstado = await _db.EstadosHabitacion.FindAsync(entity.IdEstado);
-            string nuevoEstadoNombre = nuevoEstado?.Nombre ?? "";
-
-            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
-            {
-                idHabitacion = entity.IdHabitacion,
-                numero = entity.NumeroHabitacion,
-                nuevoEstado = nuevoEstadoNombre,
-                idEstado = entity.IdEstado,
-                fechaUltimoCambio = entity.FechaUltimoCambio
-            });
-
-            await _db.Entry(entity).Reference(h => h.TipoHabitacion).LoadAsync();
-            await _db.Entry(entity).Reference(h => h.Estado).LoadAsync();
-
-            return MapToResponse(entity);
-        }
-
-        public async Task<bool> UpdateAsync(int id, HabitacionUpdateDto dto, int? idUsuario)
-        {
-            var entity = await _db.Habitaciones.FindAsync(id);
-            if (entity is null) return false;
-
-            int? estadoAnterior = entity.IdEstado;
-
-            // Validar transición si se está cambiando el estado
-            if (dto.IdEstado.HasValue)
-            {
-                bool permitida = await _validadorEstadoService.EsTransicionValidaAsync(estadoAnterior ?? 0, dto.IdEstado.Value);
-                if (!permitida)
-                    throw new BusinessRuleViolationException(BusinessErrorCode.InvalidTransition, "Transición de estado no permitida.");
-            }
-
-            if (dto.Piso.HasValue) entity.Piso = dto.Piso.Value;
-            if (dto.Descripcion != null) entity.Descripcion = dto.Descripcion;
-            if (dto.IdTipo.HasValue) entity.IdTipo = dto.IdTipo.Value;
-            if (dto.PrecioNoche.HasValue) entity.PrecioNoche = dto.PrecioNoche.Value;
-            if (dto.IdEstado.HasValue) entity.IdEstado = dto.IdEstado.Value;
-
-            if (dto.IdEstado.HasValue && estadoAnterior != dto.IdEstado.Value)
-            {
-                var historial = new HistorialEstadoHabitacion
-                {
-                    IdHabitacion = entity.IdHabitacion,
-                    IdEstadoAnterior = estadoAnterior,
-                    IdEstadoNuevo = dto.IdEstado.Value,
-                    FechaCambio = DateTime.UtcNow,
-                    IdUsuario = idUsuario,
-                    Observacion = "Cambio manual de estado"
-                };
-                _db.HistorialesEstadoHabitacion.Add(historial);
-            }
-
-            entity.FechaUltimoCambio = DateTime.UtcNow;
-            entity.UsuarioCambio = idUsuario;
-
-            await _db.SaveChangesAsync();
-
-            var nuevoEstado = await _db.EstadosHabitacion.FindAsync(entity.IdEstado);
-            string nuevoEstadoNombre = nuevoEstado?.Nombre ?? "";
-
-            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
-            {
-                idHabitacion = entity.IdHabitacion,
-                numero = entity.NumeroHabitacion,
-                nuevoEstado = nuevoEstadoNombre,
-                idEstado = entity.IdEstado,
-                fechaUltimoCambio = entity.FechaUltimoCambio
-            });
-
+            _logger.LogInformation("Habitación {Id} cambió de estado {Anterior} a {Nuevo}", idHabitacion, estadoAnterior, idNuevoEstado);
             return true;
         }
-
-        public async Task<bool> DeleteAsync(int id)
+        catch (Exception ex)
         {
-            var entity = await _db.Habitaciones.FindAsync(id);
-            if (entity is null) return false;
-
-            bool tieneEstanciaActiva = await _db.Estancias.AnyAsync(e => e.IdHabitacion == id && e.Estado == "Activa");
-            if (tieneEstanciaActiva)
-                throw new BusinessRuleViolationException(BusinessErrorCode.RoomNotAvailable, "No se puede eliminar una habitación con estancias activas.");
-
-            _db.Habitaciones.Remove(entity);
-            await _db.SaveChangesAsync();
-
-            var nuevoEstado = await _db.EstadosHabitacion.FindAsync(entity.IdEstado);
-            string nuevoEstadoNombre = nuevoEstado?.Nombre ?? "";
-
-            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
-            {
-                idHabitacion = entity.IdHabitacion,
-                numero = entity.NumeroHabitacion,
-                nuevoEstado = nuevoEstadoNombre,
-                idEstado = entity.IdEstado,
-                fechaUltimoCambio = entity.FechaUltimoCambio
-            });
-
-            return true;
-        }
-
-        public async Task<IEnumerable<HabitacionEstadoActualDto>> GetEstadoActualAsync(string? rolUsuario)
-        {
-            var habitaciones = await _db.Habitaciones
-                .Include(h => h.TipoHabitacion)
-                .Include(h => h.Estado)
-                .Include(h => h.Estancias.Where(e => e.Estado == "Activa"))
-                    .ThenInclude(e => e.ClienteTitular)
-                .Include(h => h.Reservas.Where(r => r.Estado == "Confirmada"
-                    && r.FechaEntradaPrevista.Date == DateTime.Today))
-                    .ThenInclude(r => r.Cliente)
-                .AsNoTracking()
-                .ToListAsync();
-
-            return habitaciones.Select(h =>
-            {
-                var estanciaActiva = h.Estancias.FirstOrDefault();
-                var reservaHoy = h.Reservas.FirstOrDefault();
-
-                string? clienteHuesped = null;
-                DateTime? fechaCheckin = null;
-                DateTime? fechaCheckoutPrevista = null;
-                DateTime? fechaReservaEntrada = null;
-
-                if (estanciaActiva != null)
-                {
-                    clienteHuesped = estanciaActiva.ClienteTitular != null
-                        ? $"{estanciaActiva.ClienteTitular.Nombres} {estanciaActiva.ClienteTitular.Apellidos}"
-                        : null;
-                    fechaCheckin = estanciaActiva.FechaCheckin;
-                    fechaCheckoutPrevista = estanciaActiva.FechaCheckoutPrevista;
-                }
-                else if (h.IdEstado == 5 && reservaHoy != null)
-                {
-                    // "En Reserva" con reserva hoy
-                    clienteHuesped = $"{reservaHoy.Cliente.Nombres} {reservaHoy.Cliente.Apellidos}";
-                    fechaReservaEntrada = reservaHoy.FechaEntradaPrevista;
-                }
-
-                return new HabitacionEstadoActualDto(
-                    h.IdHabitacion,
-                    h.NumeroHabitacion,
-                    h.Piso,
-                    h.TipoHabitacion?.Nombre ?? "",
-                    h.PrecioNoche,
-                    h.IdEstado,
-                    h.Estado?.Nombre ?? "",
-                    h.Descripcion,
-                    estanciaActiva?.IdEstancia,
-                    clienteHuesped,
-                    ObtenerAccionesDisponibles(h.Estado, rolUsuario),
-                    fechaCheckin,
-                    fechaCheckoutPrevista,
-                    fechaReservaEntrada
-                );
-            }).ToList();
-        }
-
-        private static List<string> ObtenerAccionesDisponibles(EstadoHabitacion? estado, string? rolUsuario)
-        {
-            var acciones = new List<string>();
-
-            if (estado == null) return acciones;
-
-            if (estado.PermiteCheckin && (rolUsuario == "Administrador" || rolUsuario == "Recepcionista"))
-                acciones.Add("CheckIn");
-
-            if (estado.PermiteCheckout && (rolUsuario == "Administrador" || rolUsuario == "Recepcionista"))
-            {
-                acciones.Add("CheckOut");
-            }
-
-            if (rolUsuario == "Administrador")
-            {
-                if (estado.Nombre == "Disponible") acciones.Add("Mantenimiento");
-                if (estado.Nombre == "Limpieza") acciones.Add("FinalizarLimpieza");
-                if (estado.Nombre == "Mantenimiento") acciones.Add("Habilitar");
-            }
-
-            if (rolUsuario == "Limpieza" && estado.Nombre == "Limpieza")
-                acciones.Add("FinalizarLimpieza");
-
-            return acciones;
-        }
-
-        private static HabitacionResponseDto MapToResponse(Habitacion h)
-        {
-            return new HabitacionResponseDto(
-                h.IdHabitacion,
-                h.NumeroHabitacion,
-                h.Piso,
-                h.Descripcion,
-                h.IdTipo,
-                h.TipoHabitacion?.Nombre ?? "",
-                h.PrecioNoche,
-                h.IdEstado,
-                h.Estado?.Nombre ?? "",
-                h.FechaUltimoCambio,
-                h.UsuarioCambio
-            );
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error al cambiar estado de habitación {Id}", idHabitacion);
+            throw;
         }
     }
 }

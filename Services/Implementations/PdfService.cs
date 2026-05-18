@@ -155,11 +155,11 @@ public class PdfService : IPdfService
     public async Task<byte[]> GenerarPdfCierreCajaAsync(DateOnly fecha)
     {
         // Este método no necesita cambios, se incluye para que todo compile
-        var datos = await _db.VCierreCajaDiarios
+        var datos = await _db.VCierreCajaDiario
             .Where(v => v.Fecha == fecha)
             .ToListAsync();
 
-        decimal totalGeneral = datos.Sum(d => d.Ingresos ?? 0);
+        decimal totalGeneral = datos.Sum(d => d.Ingresos);
 
         var document = Document.Create(container =>
         {
@@ -197,7 +197,7 @@ public class PdfService : IPdfService
                         {
                             table.Cell().Text(item.Concepto ?? "—");
                             table.Cell().Text(item.MetodoPago ?? "—");
-                            table.Cell().AlignRight().Text($"S/ {(item.Ingresos ?? 0):F2}");
+                            table.Cell().AlignRight().Text($"S/ {item.Ingresos:F2}");
                         }
                     });
 

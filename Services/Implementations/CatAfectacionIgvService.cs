@@ -20,27 +20,27 @@ public class CatAfectacionIgvService : ICatAfectacionIgvService
 
     public async Task<IEnumerable<CatAfectacionIgvResponseDto>> GetAllAsync()
     {
-        var entities = await _db.AfectacionIgvs.AsNoTracking().ToListAsync();
+        var entities = await _db.AfectacionesIgv.AsNoTracking().ToListAsync();
         return entities.Select(_mapper.ToResponse);
     }
 
     public async Task<CatAfectacionIgvResponseDto?> GetByIdAsync(string codigo)
     {
-        var entity = await _db.AfectacionIgvs.FindAsync(codigo);
+        var entity = await _db.AfectacionesIgv.FindAsync(codigo);
         return entity is not null ? _mapper.ToResponse(entity) : null;
     }
 
     public async Task<CatAfectacionIgvResponseDto> CreateAsync(CatAfectacionIgvCreateDto dto)
     {
         var entity = _mapper.FromCreate(dto);
-        _db.AfectacionIgvs.Add(entity);
+        _db.AfectacionesIgv.Add(entity);
         await _db.SaveChangesAsync();
         return _mapper.ToResponse(entity);
     }
 
     public async Task<bool> UpdateAsync(string codigo, CatAfectacionIgvUpdateDto dto)
     {
-        var entity = await _db.AfectacionIgvs.FindAsync(codigo);
+        var entity = await _db.AfectacionesIgv.FindAsync(codigo);
         if (entity is null) return false;
         _mapper.UpdateFromDto(dto, entity);
         await _db.SaveChangesAsync();
@@ -49,9 +49,9 @@ public class CatAfectacionIgvService : ICatAfectacionIgvService
 
     public async Task<bool> DeleteAsync(string codigo)
     {
-        var entity = await _db.AfectacionIgvs.FindAsync(codigo);
+        var entity = await _db.AfectacionesIgv.FindAsync(codigo);
         if (entity is null) return false;
-        _db.AfectacionIgvs.Remove(entity);
+        _db.AfectacionesIgv.Remove(entity);
         await _db.SaveChangesAsync();
         return true;
     }

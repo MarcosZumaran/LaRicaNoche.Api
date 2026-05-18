@@ -1,12 +1,12 @@
-using HotelGenericoApi.DTOs.Request;
-using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Models;
 
-namespace HotelGenericoApi.Services.Interfaces;
-
-public interface IVentaService
+namespace HotelGenericoApi.Services.Interfaces
 {
-    Task<IEnumerable<VentaResponseDto>> GetAllAsync();
-    Task<VentaResponseDto?> GetByIdAsync(int id);
-    Task<VentaResponseDto> CreateAsync(VentaCreateDto dto, int? idUsuario);
-    Task<PagedResult<VentaResponseDto>> GetPagedAsync(int page, int pageSize);
+    public interface IVentaService
+    {
+        Task<List<Venta>> GetAllAsync();
+        Task<Venta?> GetByIdAsync(int id);
+        Task<Venta> CreateAsync(Venta venta);
+        Task<bool> DeleteAsync(int id);
+    }
 }

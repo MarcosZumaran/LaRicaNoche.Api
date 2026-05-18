@@ -1,14 +1,14 @@
-using HotelGenericoApi.DTOs.Request;
-using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Models;
 
-namespace HotelGenericoApi.Services.Interfaces;
-
-public interface IHabitacionService
+namespace HotelGenericoApi.Services.Interfaces
 {
-    Task<IEnumerable<HabitacionResponseDto>> GetAllAsync();
-    Task<HabitacionResponseDto?> GetByIdAsync(int id);
-    Task<HabitacionResponseDto> CreateAsync(HabitacionCreateDto dto, int? idUsuario);
-    Task<IEnumerable<HabitacionEstadoActualDto>> GetEstadoActualAsync(string? rolUsuario);
-    Task<bool> UpdateAsync(int id, HabitacionUpdateDto dto, int? idUsuario);
-    Task<bool> DeleteAsync(int id);
+    public interface IHabitacionService
+    {
+        Task<List<Habitacion>> GetAllAsync();
+        Task<Habitacion?> GetByIdAsync(int id);
+        Task<Habitacion> CreateAsync(Habitacion habitacion);
+        Task<Habitacion?> UpdateAsync(int id, Habitacion habitacionActualizada);
+        Task<bool> DeleteAsync(int id);
+        Task<bool> CambiarEstadoAsync(int idHabitacion, int idNuevoEstado, int idUsuario, string? observacion = null);
+    }
 }

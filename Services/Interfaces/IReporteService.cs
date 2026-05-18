@@ -1,12 +1,11 @@
-using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Models;
 
-namespace HotelGenericoApi.Services.Interfaces;
-
-public interface IReporteService
+namespace HotelGenericoApi.Services.Interfaces
 {
-    Task<IEnumerable<CierreCajaResponseDto>> GetCierreCajaAsync(DateOnly? fecha);
-    Task<IEnumerable<EstadoHabitacionResponseDto>> GetEstadoHabitacionesAsync();
-    Task<byte[]> ExportarCierreCajaExcelAsync(DateOnly? fecha);
-    Task<byte[]> ExportarEstadoHabitacionesExcelAsync();
-    Task<IEnumerable<TopProductoDto>> GetTopProductosAsync(int dias = 30);
+    public interface IReporteService
+    {
+        Task<List<VCierreCajaDiario>> GetCierreCajaAsync(DateOnly fecha);
+        Task<List<VEstadoHabitacion>> GetEstadoHabitacionesAsync();
+        Task<List<VOcupacionDiaria>> GetOcupacionDiariaAsync(DateOnly fecha);
+    }
 }
