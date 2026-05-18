@@ -3,9 +3,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using HotelGenericoApi.Data;
-using HotelGenericoApi.Models;
-using Microsoft.Extensions.Logging;
 
 namespace HotelGenericoApi.Controllers;
 
@@ -16,14 +13,10 @@ namespace HotelGenericoApi.Controllers;
 public class UsuarioController : ControllerBase
 {
     private readonly IUsuarioService _service;
-    private readonly HotelDbContext _db;
-    private readonly ILogger<UsuarioController> _logger;
 
-    public UsuarioController(IUsuarioService service, HotelDbContext db, ILogger<UsuarioController> logger)
+    public UsuarioController(IUsuarioService service)
     {
         _service = service;
-        _db = db;
-        _logger = logger;
     }
 
     /// <summary>Obtiene todos los usuarios del sistema.</summary>
@@ -36,7 +29,6 @@ public class UsuarioController : ControllerBase
     }
 
     /// <summary>Obtiene un usuario por su ID.</summary>
-    /// <param name="id">ID del usuario.</param>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(DTOs.Response.UsuarioResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -47,7 +39,6 @@ public class UsuarioController : ControllerBase
     }
 
     /// <summary>Crea un nuevo usuario en el sistema.</summary>
-    /// <param name="dto">Datos del usuario.</param>
     [HttpPost]
     [ProducesResponseType(typeof(DTOs.Response.UsuarioResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,8 +49,6 @@ public class UsuarioController : ControllerBase
     }
 
     /// <summary>Actualiza los datos de un usuario existente.</summary>
-    /// <param name="id">ID del usuario.</param>
-    /// <param name="dto">Datos actualizados.</param>
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -70,7 +59,6 @@ public class UsuarioController : ControllerBase
     }
 
     /// <summary>Elimina (desactiva) un usuario por su ID.</summary>
-    /// <param name="id">ID del usuario.</param>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -94,49 +82,7 @@ public class UsuarioController : ControllerBase
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        try
-        {
-            var result = await _service.LoginAsync(dto);
-
-            if (result is not null)
-            {
-                await RegistrarLoginAttempt(ipAddress, dto.Username, true, userAgent);
-                _logger.LogInformation("Login exitoso para usuario {Username} desde IP {IpAddress}", dto.Username, ipAddress);
-                return Ok(result);
-            }
-            else
-            {
-                await RegistrarLoginAttempt(ipAddress, dto.Username, false, userAgent);
-                _logger.LogWarning("Login fallido para usuario {Username} desde IP {IpAddress}", dto.Username, ipAddress);
-                return Unauthorized();
-            }
-        }
-        catch (Exception ex)
-        {
-            await RegistrarLoginAttempt(ipAddress, dto.Username, false, userAgent);
-            _logger.LogWarning(ex, "Login fallido para usuario {Username} desde IP {IpAddress}", dto.Username, ipAddress);
-            throw;
-        }
-    }
-
-    private async Task RegistrarLoginAttempt(string ipAddress, string? username, bool succeeded, string? userAgent)
-    {
-        try
-        {
-            var attempt = new LoginAttempt
-            {
-                IpAddress = ipAddress,
-                Username = username,
-                AttemptedAt = DateTime.UtcNow,
-                Succeeded = succeeded,
-                UserAgent = userAgent?.Length > 500 ? userAgent[..500] : userAgent
-            };
-            _db.LoginAttempts.Add(attempt);
-            await _db.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al registrar LoginAttempt");
-        }
+        var result = await _service.LoginAsync(dto, ipAddress, userAgent);
+        return result is not null ? Ok(result) : Unauthorized();
     }
 }

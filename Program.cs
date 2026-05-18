@@ -14,9 +14,17 @@ using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext
-builder.Services.AddDbContext<HotelDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// DbContext — Testing usa InMemory, otros usan SQL Server
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddDbContext<HotelDbContext>(options =>
+        options.UseInMemoryDatabase("IntegrationTestDb"));
+}
+else
+{
+    builder.Services.AddDbContext<HotelDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 // NLua
 builder.Services.AddSingleton<ILuaService, LuaService>();
@@ -81,7 +89,7 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 5,
+                PermitLimit = 10,
                 Window = TimeSpan.FromMinutes(1),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
@@ -98,18 +106,30 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
-    options.AddPolicy("global", context =>
+    options.AddPolicy("authenticated", context =>
     {
-        var userId = context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                     ?? context.Connection.RemoteIpAddress?.ToString()
-                     ?? "unknown";
-        return RateLimitPartition.GetFixedWindowLimiter(userId,
+        if (context.User?.Identity?.IsAuthenticated == true)
+        {
+            var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                         ?? "unknown";
+            return RateLimitPartition.GetFixedWindowLimiter(userId,
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 10
+                });
+        }
+
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip,
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 100,
+                PermitLimit = 20,
                 Window = TimeSpan.FromMinutes(1),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 10
+                QueueLimit = 0
             });
     });
 });
@@ -133,7 +153,8 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
     };
 });
 
@@ -180,6 +201,26 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// HQC-040: Validar placeholders en producción
+if (app.Environment.IsProduction())
+{
+    var criticalSettings = new Dictionary<string, string>
+    {
+        ["Jwt:Key"] = app.Configuration["Jwt:Key"]!,
+        ["ConnectionStrings:DefaultConnection"] = app.Configuration.GetConnectionString("DefaultConnection")!
+    };
+
+    foreach (var (name, value) in criticalSettings)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.StartsWith("__"))
+        {
+            var error = $"CRÍTICO: La configuración de producción '{name}' no ha sido establecida. " +
+                        "Asegúrate de configurar las variables de entorno o el archivo appsettings.Production.json.";
+            throw new InvalidOperationException(error);
+        }
+    }
+}
+
 app.UseMiddleware<HotelGenericoApi.Middleware.ExceptionMiddleware>();
 
 // Seed de usuarios por defecto en desarrollo
@@ -199,7 +240,7 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();

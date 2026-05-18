@@ -23,5 +23,7 @@ public enum BusinessErrorCode
     TarifaNotFound,
     EstadoNotFound,
     TransicionNotFound,
-    ValidationError
+    ValidationError,
+    ClientHasDependencies,
+    UserDuplicate
 }

@@ -66,9 +66,18 @@ public class ClienteService : IClienteService
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var entity = await _db.Clientes.FindAsync(id);
-        if (entity is null) return false;
-        _db.Clientes.Remove(entity);
+        var cliente = await _db.Clientes.FindAsync(id);
+        if (cliente is null) return false;
+
+        bool tieneEstancias = await _db.Estancias.AnyAsync(e => e.IdClienteTitular == id);
+        bool tieneVentas = await _db.Ventas.AnyAsync(v => v.IdCliente == id);
+        bool tieneReservas = await _db.Reservas.AnyAsync(r => r.IdCliente == id);
+
+        if (tieneEstancias || tieneVentas || tieneReservas)
+            throw new BusinessRuleViolationException(BusinessErrorCode.ClientHasDependencies,
+                "No se puede eliminar el cliente porque tiene estancias, ventas o reservas asociadas.");
+
+        _db.Clientes.Remove(cliente);
         await _db.SaveChangesAsync();
         return true;
     }

@@ -9,7 +9,7 @@ namespace HotelGenericoApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-[EnableRateLimiting("global")]
+[EnableRateLimiting("authenticated")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class VentaController : ControllerBase
 {

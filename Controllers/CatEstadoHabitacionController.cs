@@ -7,7 +7,7 @@ namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "Administrador")]
 public class CatEstadoHabitacionController : ControllerBase
 {
     private readonly ICatEstadoHabitacionService _service;

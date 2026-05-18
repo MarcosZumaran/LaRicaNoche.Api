@@ -1,17 +1,24 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace HotelGenericoApi.Tests;
 
-public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Testing");
+    }
+}
 
-    public IntegrationTests(WebApplicationFactory<Program> factory)
+public class IntegrationTests : IClassFixture<CustomWebApplicationFactory>
+{
+    private readonly CustomWebApplicationFactory _factory;
+
+    public IntegrationTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -28,14 +35,15 @@ public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
     {
         var client = _factory.CreateClient();
-        var loginPayload = new { Username = "invalido", Password = "invalida" };
         var content = new StringContent(
-            JsonSerializer.Serialize(loginPayload),
+            """{"username":"invalido","password":"invalida"}""",
             Encoding.UTF8,
             "application/json");
 
         var response = await client.PostAsync("/api/usuario/login", content);
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(HttpStatusCode.Unauthorized == response.StatusCode,
+            $"Expected 401 but got {(int)response.StatusCode}: {body}");
     }
 
     [Fact]

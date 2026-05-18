@@ -9,10 +9,12 @@ namespace HotelGenericoApi.Services.Implementations;
 public class SetupService
 {
     private readonly HotelDbContext _db;
+    private readonly ILogger<SetupService> _logger;
 
-    public SetupService(HotelDbContext db)
+    public SetupService(HotelDbContext db, ILogger<SetupService> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public async Task<bool> EsPrimerInicioAsync()
@@ -85,12 +87,9 @@ public class SetupService
                         DebeCambiarPassword = true
                     });
 
-                    // Mostrar UNA SOLA VEZ en la consola
-                    Console.WriteLine("============================================");
-                    Console.WriteLine($"USUARIO CREADO: {username}");
-                    Console.WriteLine($"CONTRASEÑA TEMPORAL: {password}");
-                    Console.WriteLine("CAMBIAR INMEDIATAMENTE AL INICIAR SESIÓN.");
-                    Console.WriteLine("============================================");
+                    _logger.LogWarning(
+                        "Usuario creado: {Username}. Cambiar contraseña al iniciar sesión.",
+                        username);
                 }
             }
 

@@ -1,3 +1,4 @@
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -10,6 +11,7 @@ using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Mappings;
 using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Models;
+using HotelGenericoApi.Models.Exceptions;
 
 namespace HotelGenericoApi.Services.Implementations;
 
@@ -18,12 +20,14 @@ public class UsuarioService : IUsuarioService
     private readonly HotelDbContext _db;
     private readonly UsuarioMapper _mapper;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<UsuarioService> _logger;
 
-    public UsuarioService(HotelDbContext db, UsuarioMapper mapper, IConfiguration configuration)
+    public UsuarioService(HotelDbContext db, UsuarioMapper mapper, IConfiguration configuration, ILogger<UsuarioService> logger)
     {
         _db = db;
         _mapper = mapper;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<UsuarioResponseDto>> GetAllAsync()
@@ -64,25 +68,38 @@ public class UsuarioService : IUsuarioService
 
     public async Task<UsuarioResponseDto> CreateAsync(UsuarioCreateDto dto)
     {
-        var entity = _mapper.FromCreate(dto);
-        entity.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-        entity.FechaCreacion = DateTime.UtcNow;
-        entity.EstaActivo = true;
+        using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        try
+        {
+            if (await _db.Usuarios.AnyAsync(u => u.Username == dto.Username))
+                throw new BusinessRuleViolationException(BusinessErrorCode.UserDuplicate, "El nombre de usuario ya existe.");
 
-        _db.Usuarios.Add(entity);
-        await _db.SaveChangesAsync();
+            var entity = _mapper.FromCreate(dto);
+            entity.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            entity.FechaCreacion = DateTime.UtcNow;
+            entity.EstaActivo = true;
 
-        // Recargar con navegación para obtener el nombre del rol
-        await _db.Entry(entity).Reference(u => u.Rol).LoadAsync();
+            _db.Usuarios.Add(entity);
+            await _db.SaveChangesAsync();
 
-        return new UsuarioResponseDto(
-            entity.IdUsuario,
-            entity.Username,
-            entity.IdRol,
-            entity.Rol?.Nombre ?? "",
-            entity.EstaActivo ?? false,
-            entity.FechaCreacion ?? DateTime.MinValue
-        );
+            await _db.Entry(entity).Reference(u => u.Rol).LoadAsync();
+
+            await transaction.CommitAsync();
+
+            return new UsuarioResponseDto(
+                entity.IdUsuario,
+                entity.Username,
+                entity.IdRol,
+                entity.Rol?.Nombre ?? "",
+                entity.EstaActivo ?? false,
+                entity.FechaCreacion ?? DateTime.MinValue
+            );
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<bool> UpdateAsync(int id, UsuarioUpdateDto dto)
@@ -111,14 +128,23 @@ public class UsuarioService : IUsuarioService
         return true;
     }
 
-    public async Task<LoginResponseDto?> LoginAsync(LoginDto dto)
+    public async Task<LoginResponseDto?> LoginAsync(LoginDto dto, string? ipAddress = null, string? userAgent = null)
     {
         var usuario = await _db.Usuarios
             .Include(u => u.Rol)
             .FirstOrDefaultAsync(u => u.Username == dto.Username && u.EstaActivo == true);
 
+        bool succeeded;
+
         if (usuario is null || !BCrypt.Net.BCrypt.Verify(dto.Password, usuario.PasswordHash))
+        {
+            succeeded = false;
+            await RegistrarLoginAttemptAsync(ipAddress, dto.Username, succeeded, userAgent);
             return null;
+        }
+
+        succeeded = true;
+        await RegistrarLoginAttemptAsync(ipAddress, dto.Username, succeeded, userAgent);
 
         var token = GenerarToken(usuario);
         var usuarioDto = new UsuarioResponseDto(
@@ -136,6 +162,27 @@ public class UsuarioService : IUsuarioService
         var expiration = jwtToken.ValidTo;
 
         return new LoginResponseDto(token, expiration, usuarioDto);
+    }
+
+    private async Task RegistrarLoginAttemptAsync(string? ipAddress, string? username, bool succeeded, string? userAgent)
+    {
+        try
+        {
+            var attempt = new LoginAttempt
+            {
+                IpAddress = ipAddress ?? "",
+                Username = username,
+                AttemptedAt = DateTime.UtcNow,
+                Succeeded = succeeded,
+                UserAgent = userAgent?.Length > 500 ? userAgent[..500] : userAgent
+            };
+            _db.LoginAttempts.Add(attempt);
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al registrar LoginAttempt");
+        }
     }
 
     private string GenerarToken(Usuario usuario)

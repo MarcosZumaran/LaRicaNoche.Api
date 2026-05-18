@@ -7,7 +7,7 @@ namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "Administrador")]
 public class CatTipoDocumentoController : ControllerBase
 {
     private readonly ICatTipoDocumentoService _service;
