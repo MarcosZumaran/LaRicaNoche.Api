@@ -135,7 +135,7 @@ public class UsuarioService : IUsuarioService
         return true;
     }
 
-    public async Task<LoginResponseDto?> LoginAsync(LoginDto dto, string? ipAddress = null, string? userAgent = null)
+    public async Task<(string token, UsuarioResponseDto usuario)?> LoginAsync(LoginDto dto, string? ipAddress = null, string? userAgent = null)
     {
         var usuario = await _db.Usuarios
             .Include(u => u.Rol)
@@ -163,12 +163,7 @@ public class UsuarioService : IUsuarioService
             usuario.FechaCreacion ?? DateTime.MinValue
         );
 
-        // Obtener la expiración desde los claims del token
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var jwtToken = tokenHandler.ReadJwtToken(token);
-        var expiration = jwtToken.ValidTo;
-
-        return new LoginResponseDto(token, expiration, usuarioDto);
+        return (token, usuarioDto);
     }
 
     private async Task RegistrarLoginAttemptAsync(string? ipAddress, string? username, bool succeeded, string? userAgent)
