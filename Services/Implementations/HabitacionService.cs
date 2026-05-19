@@ -129,17 +129,61 @@ public class HabitacionService : IHabitacionService
             .AsNoTracking()
             .ToListAsync();
 
-        var transicionesPorEstado = await _db.TransicionesEstado
-            .GroupBy(t => t.IdEstadoActual)
-            .ToDictionaryAsync(g => g.Key, g => g.Select(t => t.IdEstadoSiguiente).ToList());
+        // Cargar transiciones permitidas
+        var transiciones = await _db.TransicionesEstado.ToListAsync();
 
+        // Estados
         var estados = await _db.EstadosHabitacion
             .ToDictionaryAsync(e => e.IdEstado, e => e.Nombre);
+
+        // Reservas activas (para decidir si mostrar "CancelarReserva")
+        var idsHabitacion = habitaciones.Select(h => h.IdHabitacion).ToList();
+        var reservasActivas = await _db.Reservas
+            .Where(r => idsHabitacion.Contains(r.IdHabitacion) && r.Estado == "Confirmada")
+            .GroupBy(r => r.IdHabitacion)
+            .ToDictionaryAsync(g => g.Key, g => g.First());
+
+        // Mapeo de ID de estado destino -> etiqueta de acción
+        var mapaAccion = new Dictionary<int, string>
+        {
+            { 2, "CheckIn" },      // transición a "Ocupada"
+            { 3, "FinalizarLimpieza" }, // transición a "Limpieza" (cuando la habitación está ocupada → se hace CheckOut real, pero desde el front se llamará "Salida")
+            { 1, "Habilitar" },    // transición a "Disponible" (desde limpieza o mantenimiento)
+            { 4, "Mantenimiento" },
+            { 5, "Reservar" }      // transición a "En Reserva"
+        };
 
         return habitaciones.Select(h =>
         {
             var estanciaActiva = h.Estancias.FirstOrDefault(e => e.FechaCheckoutReal == null);
-            var idsSiguientes = transicionesPorEstado.GetValueOrDefault(h.IdEstado, []);
+
+            var acciones = new List<string>();
+
+            foreach (var t in transiciones.Where(t => t.IdEstadoActual == h.IdEstado))
+            {
+                // Si la transición es a "Ocupada" (2) y NO hay reserva activa → CheckIn
+                if (t.IdEstadoSiguiente == 2 && !reservasActivas.ContainsKey(h.IdHabitacion))
+                    acciones.Add("CheckIn");
+                // Si la transición es a "Ocupada" (2) y SÍ hay reserva activa → CheckIn (con reserva directa)
+                else if (t.IdEstadoSiguiente == 2 && reservasActivas.ContainsKey(h.IdHabitacion))
+                    acciones.Add("CheckIn");
+                // Si la transición es a "Limpieza" (3) desde "Ocupada" (2) → CheckOut
+                else if (t.IdEstadoActual == 2 && t.IdEstadoSiguiente == 3)
+                    acciones.Add("CheckOut");
+                // Mantenimiento
+                else if (t.IdEstadoSiguiente == 4)
+                    acciones.Add("Mantenimiento");
+                // Habilitar (volver a Disponible)
+                else if (t.IdEstadoSiguiente == 1)
+                    acciones.Add("Habilitar");
+                // Reservar (solo si está Disponible o En Reserva)
+                else if (t.IdEstadoSiguiente == 5)
+                    acciones.Add("Reservar");
+            }
+
+            // Agregar "CancelarReserva" si hay reserva activa
+            if (reservasActivas.ContainsKey(h.IdHabitacion))
+                acciones.Add("CancelarReserva");
 
             return new HabitacionEstadoActualDto(
                 IdHabitacion: h.IdHabitacion,
@@ -155,9 +199,7 @@ public class HabitacionService : IHabitacionService
                 ClienteHuesped: estanciaActiva?.ClienteTitular != null
                     ? $"{estanciaActiva.ClienteTitular.Nombres} {estanciaActiva.ClienteTitular.Apellidos}"
                     : null,
-                AccionesDisponibles: idsSiguientes
-                    .Select(id => estados.GetValueOrDefault(id) ?? id.ToString())
-                    .ToList(),
+                AccionesDisponibles: acciones,
                 FechaCheckin: estanciaActiva?.FechaCheckin,
                 FechaCheckoutPrevista: estanciaActiva?.FechaCheckoutPrevista,
                 FechaReservaEntrada: null
