@@ -12,5 +12,6 @@ namespace HotelGenericoApi.Services.Interfaces
         Task<bool> DeleteAsync(int id);
         Task<bool> CambiarEstadoAsync(int idHabitacion, int idNuevoEstado, int idUsuario, string? observacion = null);
         Task<List<HabitacionEstadoActualDto>> GetEstadoActualAsync();
+        Task<List<HabitacionEstadoActualDto>> GetDisponiblesAsync(DateTime fechaEntrada, DateTime fechaSalida);
     }
 }

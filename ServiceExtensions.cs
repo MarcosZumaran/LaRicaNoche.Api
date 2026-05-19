@@ -40,6 +40,7 @@ public static class ServiceExtensions
         services.AddScoped<IClienteService, ClienteService>();
         services.AddScoped<IHabitacionService, HabitacionService>();
         services.AddScoped<IEstanciaService, EstanciaService>();
+        services.AddScoped<IReservaService, ReservaService>();
         services.AddScoped<IProductoService, ProductoService>();
         services.AddScoped<IComprobanteService, ComprobanteService>();
         services.AddScoped<IReporteService, ReporteService>();

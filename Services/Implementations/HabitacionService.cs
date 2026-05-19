@@ -163,4 +163,22 @@ public class HabitacionService : IHabitacionService
             );
         }).ToList();
     }
+
+    public async Task<List<HabitacionEstadoActualDto>> GetDisponiblesAsync(DateTime fechaEntrada, DateTime fechaSalida)
+    {
+        var todas = await GetEstadoActualAsync();
+        var idsOcupadas = await _db.Reservas
+            .Where(r => r.Estado != "Cancelada" &&
+                        r.FechaEntradaPrevista < fechaSalida &&
+                        r.FechaSalidaPrevista > fechaEntrada)
+            .Select(r => r.IdHabitacion)
+            .Union(_db.Estancias
+                .Where(e => e.Estado == "Activa" &&
+                            e.FechaCheckin < fechaSalida &&
+                            e.FechaCheckoutPrevista > fechaEntrada)
+                .Select(e => e.IdHabitacion))
+            .ToListAsync();
+
+        return todas.Where(h => !idsOcupadas.Contains(h.IdHabitacion)).ToList();
+    }
 }

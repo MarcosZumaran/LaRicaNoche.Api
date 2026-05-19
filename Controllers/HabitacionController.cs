@@ -84,6 +84,17 @@ public class HabitacionController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Obtiene las habitaciones disponibles en un rango de fechas.</summary>
+    [HttpGet("disponibles")]
+    [ProducesResponseType(typeof(List<HabitacionEstadoActualDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<HabitacionEstadoActualDto>>> GetDisponibles(
+        [FromQuery] DateTime fechaEntrada,
+        [FromQuery] DateTime fechaSalida)
+    {
+        var result = await _habitacionService.GetDisponiblesAsync(fechaEntrada, fechaSalida);
+        return Ok(result);
+    }
+
     /// <summary>Obtiene el estado actual de todas las habitaciones con datos en tiempo real.</summary>
     [HttpGet("estado-actual")]
     [ProducesResponseType(typeof(List<HabitacionEstadoActualDto>), StatusCodes.Status200OK)]
