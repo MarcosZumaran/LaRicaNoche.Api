@@ -51,12 +51,7 @@ public static class ServiceExtensions
         services.AddScoped<IValidadorEstadoService, ValidadorEstadoService>();
 
         // HttpClient tipificado para RENIEC
-        services.AddHttpClient<IReniecService, ReniecService>(client =>
-        {
-            client.BaseAddress = new Uri(configuration["VerificaPE:BaseUrl"]!);
-            client.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", configuration["VerificaPE:ApiKey"]);
-        });
+        services.AddHttpClient<IReniecService, ReniecService>();
 
         // Setup y transacciones
         services.AddScoped<SetupService>();
