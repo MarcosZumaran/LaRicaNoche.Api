@@ -86,12 +86,10 @@ public class SetupService
                         DebeCambiarPassword = false
                     });
 
-                    _logger.LogInformation(
-                        "Usuario creado: {Username} / {Password} (Rol: {Rol})",
-                        username, password,
-                        usuariosPorDefecto.First(u => u.Username == username).IdRol == rolAdmin.IdRol ? "Administrador"
-                        : username == "recepcion" ? "Recepcionista"
-                        : "Limpieza");
+                    _logger.LogInformation("Usuario creado: {Username} (Rol: {Rol})", username,
+                    usuariosPorDefecto.First(u => u.Username == username).IdRol == rolAdmin.IdRol ? "Administrador"
+                    : username == "recepcion" ? "Recepcionista"
+                    : "Limpieza");
                 }
             }
 
