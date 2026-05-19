@@ -58,8 +58,8 @@ public class UsuarioServiceTests
         var result = await service.LoginAsync(dto, "127.0.0.1", "TestAgent");
 
         Assert.NotNull(result);
-        Assert.NotEmpty(result.Token);
-        Assert.Equal("test", result.Usuario.Username);
+        Assert.NotEmpty(result.Value.token);
+        Assert.Equal("test", result.Value.usuario.Username);
     }
 
     [Fact]

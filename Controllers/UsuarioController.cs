@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace HotelGenericoApi.Controllers;
 
@@ -13,13 +14,14 @@ namespace HotelGenericoApi.Controllers;
 public class UsuarioController : ControllerBase
 {
     private readonly IUsuarioService _service;
+    private readonly IConfiguration _configuration;
 
-    public UsuarioController(IUsuarioService service)
+    public UsuarioController(IUsuarioService service, IConfiguration configuration)
     {
         _service = service;
+        _configuration = configuration;
     }
 
-    /// <summary>Obtiene todos los usuarios del sistema.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<DTOs.Response.UsuarioResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
@@ -28,7 +30,6 @@ public class UsuarioController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Obtiene un usuario por su ID.</summary>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(DTOs.Response.UsuarioResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -38,7 +39,6 @@ public class UsuarioController : ControllerBase
         return result is not null ? Ok(result) : NotFound();
     }
 
-    /// <summary>Crea un nuevo usuario en el sistema.</summary>
     [HttpPost]
     [ProducesResponseType(typeof(DTOs.Response.UsuarioResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -48,7 +48,6 @@ public class UsuarioController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.IdUsuario }, result);
     }
 
-    /// <summary>Actualiza los datos de un usuario existente.</summary>
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -58,7 +57,6 @@ public class UsuarioController : ControllerBase
         return updated ? NoContent() : NotFound();
     }
 
-    /// <summary>Elimina (desactiva) un usuario por su ID.</summary>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -68,14 +66,10 @@ public class UsuarioController : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
-    /// <summary>Inicia sesión y devuelve un token JWT.</summary>
-    /// <param name="dto">Credenciales de acceso.</param>
-    /// <response code="200">Token JWT generado exitosamente.</response>
-    /// <response code="401">Credenciales inválidas.</response>
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("login")]
-    [ProducesResponseType(typeof(DTOs.Response.LoginResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DTOs.Response.UsuarioResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(LoginDto dto)
     {
@@ -83,6 +77,72 @@ public class UsuarioController : ControllerBase
         var userAgent = Request.Headers.UserAgent.ToString();
 
         var result = await _service.LoginAsync(dto, ipAddress, userAgent);
-        return result is not null ? Ok(result) : Unauthorized();
+        if (result is null) return Unauthorized();
+
+        var (token, usuario) = result.Value;
+
+        var cookieSection = _configuration.GetSection("CookieAuth");
+        var secure = cookieSection.GetValue<bool>("Secure");
+        var sameSite = cookieSection.GetValue<string>("SameSite") switch
+        {
+            "Strict" => SameSiteMode.Strict,
+            "Lax" => SameSiteMode.Lax,
+            "None" => SameSiteMode.None,
+            _ => SameSiteMode.Lax
+        };
+
+        var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+        var jwtToken = tokenHandler.ReadJwtToken(token);
+        var expiration = jwtToken.ValidTo;
+
+        Response.Cookies.Append("auth_token", token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = secure,
+            SameSite = sameSite,
+            Expires = expiration,
+            Path = "/"
+        });
+
+        return Ok(usuario);
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(DTOs.Response.UsuarioResponseDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Me()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim is null || !int.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var usuario = await _service.GetByIdAsync(userId);
+        return usuario is not null ? Ok(usuario) : Unauthorized();
+    }
+
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult Logout()
+    {
+        var cookieSection = _configuration.GetSection("CookieAuth");
+        var secure = cookieSection.GetValue<bool>("Secure");
+        var sameSite = cookieSection.GetValue<string>("SameSite") switch
+        {
+            "Strict" => SameSiteMode.Strict,
+            "Lax" => SameSiteMode.Lax,
+            "None" => SameSiteMode.None,
+            _ => SameSiteMode.Lax
+        };
+
+        Response.Cookies.Delete("auth_token", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = secure,
+            SameSite = sameSite,
+            Path = "/"
+        });
+
+        return Ok(new { message = "Sesión cerrada" });
     }
 }
