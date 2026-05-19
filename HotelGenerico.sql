@@ -109,6 +109,7 @@ CREATE TABLE usuario (
     id_rol INT NOT NULL,
     fecha_creacion DATETIME DEFAULT GETDATE(),
     esta_activo BIT DEFAULT 1,
+    debe_cambiar_password BIT NOT NULL DEFAULT 1,
     CONSTRAINT fk_usuario_rol FOREIGN KEY (id_rol) REFERENCES rol_usuario(id_rol)
 );
 
@@ -401,9 +402,43 @@ INSERT INTO cliente (tipo_documento, documento, nombres, apellidos, nacionalidad
 VALUES ('0','00000000','CLIENTE','ANONIMO','PERUANA');
 
 INSERT INTO transicion_estado (id_estado_actual, id_estado_siguiente) VALUES
-(1,2),(2,3),(3,1),(1,4),(4,1),        -- originales
-(1,5),(5,2),(5,1);                     -- nuevas: En Reserva
+(1,2),(2,3),(3,1),(1,4),(4,1),
+(1,5),(5,2),(5,1);
 GO
+
+-- Insertar tipos de habitación adicionales
+INSERT INTO tipo_habitacion (nombre, capacidad, descripcion, precio_base) VALUES
+('Doble',3,'Habitación con dos camas individuales',70.00),
+('Suite',4,'Suite con sala de estar independiente',120.00);
+GO
+
+-- Insertar habitaciones
+INSERT INTO habitacion (numero_habitacion, piso, id_tipo, precio_noche, id_estado) VALUES
+('101',1,1,50.00,1), ('102',1,1,50.00,1),
+('103',1,2,70.00,1), ('104',1,2,70.00,1),
+('201',2,1,60.00,1), ('202',2,1,60.00,1),
+('203',2,3,120.00,1), ('204',2,3,120.00,1);
+GO
+
+-- Insertar productos
+INSERT INTO producto (nombre, descripcion, precio_unitario, id_afectacion_igv, id_categoria, stock) VALUES
+('Agua Mineral 500ml','Agua sin gas',2.50,'10',1,100),
+('Gaseosa Coca-Cola 355ml','Gaseosa personal',3.00,'10',1,80),
+('Cerveza Cusqueña 330ml','Cerveza artesanal',6.00,'10',1,50),
+('Papas Lays 120g','Snack de papas fritas',4.00,'10',2,60),
+('Chocolate Sublime 50g','Chocolate con leche',3.50,'10',2,40),
+('Servicio de Lavandería','Lavado y planchado por prenda',15.00,'10',3,999),
+('Llamada Nacional','Por minuto',0.50,'10',3,999);
+GO
+
+INSERT INTO tarifa (id_tipo_habitacion, id_temporada, precio) VALUES
+(1,1,60.00),(1,2,42.50),
+(2,1,84.00),(2,2,59.50),
+(3,1,144.00),(3,2,102.00);
+GO
+
+-- Usuarios por defecto: los crea SetupService.cs al iniciar en desarrollo
+-- Credenciales: admin/Admin123!, recepcion/Recepcion123!, limpieza/Limpieza123!
 
 -- =============================================
 -- VISTAS PARA REPORTES
