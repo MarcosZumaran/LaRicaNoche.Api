@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 
@@ -46,6 +47,16 @@ public class ReporteController : ControllerBase
     public async Task<ActionResult<List<VOcupacionDiaria>>> GetOcupacionDiaria([FromQuery] DateOnly fecha)
     {
         var result = await _reporteService.GetOcupacionDiariaAsync(fecha);
+        return Ok(result);
+    }
+
+    /// <summary>Obtiene el top de productos más vendidos.</summary>
+    /// <param name="dias">Cantidad de días hacia atrás para el reporte.</param>
+    [HttpGet("top-productos")]
+    [ProducesResponseType(typeof(List<TopProductoDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<TopProductoDto>>> GetTopProductos([FromQuery] int dias = 30)
+    {
+        var result = await _reporteService.GetTopProductosAsync(dias);
         return Ok(result);
     }
 }

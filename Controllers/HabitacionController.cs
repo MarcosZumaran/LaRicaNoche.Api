@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 
@@ -79,6 +80,15 @@ public class HabitacionController : ControllerBase
         if (!result)
             return NotFound();
         return NoContent();
+    }
+
+    /// <summary>Obtiene el estado actual de todas las habitaciones con datos en tiempo real.</summary>
+    [HttpGet("estado-actual")]
+    [ProducesResponseType(typeof(List<HabitacionEstadoActualDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<HabitacionEstadoActualDto>>> GetEstadoActual()
+    {
+        var result = await _habitacionService.GetEstadoActualAsync();
+        return Ok(result);
     }
 
     /// <summary>Cambia el estado de una habitación validando transiciones permitidas.</summary>

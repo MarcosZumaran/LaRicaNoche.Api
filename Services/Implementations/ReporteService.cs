@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 
@@ -36,6 +37,24 @@ public class ReporteService : IReporteService
     {
         return await _db.VOcupacionDiaria
             .Where(o => o.Fecha == fecha)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<List<TopProductoDto>> GetTopProductosAsync(int dias)
+    {
+        var fechaLimite = DateTime.UtcNow.AddDays(-dias);
+        return await _db.ItemsVenta
+            .Where(iv => iv.Venta!.FechaVenta >= fechaLimite)
+            .GroupBy(iv => iv.Producto!.Nombre)
+            .Select(g => new TopProductoDto
+            {
+                Nombre = g.Key,
+                CantidadTotal = g.Sum(iv => iv.Cantidad),
+                IngresoTotal = g.Sum(iv => iv.Subtotal)
+            })
+            .OrderByDescending(tp => tp.IngresoTotal)
+            .Take(10)
             .AsNoTracking()
             .ToListAsync();
     }

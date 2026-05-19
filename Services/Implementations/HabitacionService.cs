@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using HotelGenericoApi.Data;
+using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 
@@ -116,5 +117,50 @@ public class HabitacionService : IHabitacionService
             _logger.LogError(ex, "Error al cambiar estado de habitación {Id}", idHabitacion);
             throw;
         }
+    }
+
+    public async Task<List<HabitacionEstadoActualDto>> GetEstadoActualAsync()
+    {
+        var habitaciones = await _db.Habitaciones
+            .Include(h => h.Tipo)
+            .Include(h => h.Estado)
+            .Include(h => h.Estancias.Where(e => e.FechaCheckoutReal == null))
+                .ThenInclude(e => e.ClienteTitular)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var transicionesPorEstado = await _db.TransicionesEstado
+            .GroupBy(t => t.IdEstadoActual)
+            .ToDictionaryAsync(g => g.Key, g => g.Select(t => t.IdEstadoSiguiente).ToList());
+
+        var estados = await _db.EstadosHabitacion
+            .ToDictionaryAsync(e => e.IdEstado, e => e.Nombre);
+
+        return habitaciones.Select(h =>
+        {
+            var estanciaActiva = h.Estancias.FirstOrDefault(e => e.FechaCheckoutReal == null);
+            var idsSiguientes = transicionesPorEstado.GetValueOrDefault(h.IdEstado, []);
+
+            return new HabitacionEstadoActualDto(
+                IdHabitacion: h.IdHabitacion,
+                NumeroHabitacion: h.NumeroHabitacion,
+                Piso: h.Piso,
+                NombreTipo: h.Tipo?.Nombre ?? "",
+                PrecioNoche: h.PrecioNoche,
+                IdEstado: h.IdEstado,
+                NombreEstado: h.Estado?.Nombre ?? "",
+                Descripcion: h.Descripcion,
+                IdEstanciaActiva: estanciaActiva?.IdEstancia,
+                ClienteHuesped: estanciaActiva?.ClienteTitular != null
+                    ? $"{estanciaActiva.ClienteTitular.Nombres} {estanciaActiva.ClienteTitular.Apellidos}"
+                    : null,
+                AccionesDisponibles: idsSiguientes
+                    .Select(id => estados.GetValueOrDefault(id) ?? id.ToString())
+                    .ToList(),
+                FechaCheckin: estanciaActiva?.FechaCheckin,
+                FechaCheckoutPrevista: estanciaActiva?.FechaCheckoutPrevista,
+                FechaReservaEntrada: null
+            );
+        }).ToList();
     }
 }

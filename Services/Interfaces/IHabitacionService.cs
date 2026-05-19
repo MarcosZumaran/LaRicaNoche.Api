@@ -1,3 +1,4 @@
+using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 
 namespace HotelGenericoApi.Services.Interfaces
@@ -10,5 +11,6 @@ namespace HotelGenericoApi.Services.Interfaces
         Task<Habitacion?> UpdateAsync(int id, Habitacion habitacionActualizada);
         Task<bool> DeleteAsync(int id);
         Task<bool> CambiarEstadoAsync(int idHabitacion, int idNuevoEstado, int idUsuario, string? observacion = null);
+        Task<List<HabitacionEstadoActualDto>> GetEstadoActualAsync();
     }
 }

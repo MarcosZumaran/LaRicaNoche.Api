@@ -1,3 +1,4 @@
+using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 
 namespace HotelGenericoApi.Services.Interfaces
@@ -7,5 +8,6 @@ namespace HotelGenericoApi.Services.Interfaces
         Task<List<VCierreCajaDiario>> GetCierreCajaAsync(DateOnly fecha);
         Task<List<VEstadoHabitacion>> GetEstadoHabitacionesAsync();
         Task<List<VOcupacionDiaria>> GetOcupacionDiariaAsync(DateOnly fecha);
+        Task<List<TopProductoDto>> GetTopProductosAsync(int dias);
     }
 }
