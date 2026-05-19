@@ -4,6 +4,7 @@ public sealed record HabitacionEstadoActualDto(
     int IdHabitacion,
     string NumeroHabitacion,
     int? Piso,
+    int IdTipo,
     string NombreTipo,
     decimal PrecioNoche,
     int IdEstado,

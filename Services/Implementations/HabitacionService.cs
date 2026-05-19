@@ -145,6 +145,7 @@ public class HabitacionService : IHabitacionService
                 IdHabitacion: h.IdHabitacion,
                 NumeroHabitacion: h.NumeroHabitacion,
                 Piso: h.Piso,
+                IdTipo: h.IdTipo,
                 NombreTipo: h.Tipo?.Nombre ?? "",
                 PrecioNoche: h.PrecioNoche,
                 IdEstado: h.IdEstado,
