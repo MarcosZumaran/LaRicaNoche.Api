@@ -104,6 +104,18 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (string.IsNullOrEmpty(context.Token))
+            {
+                context.Token = context.Request.Cookies["auth_token"];
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // CORS
