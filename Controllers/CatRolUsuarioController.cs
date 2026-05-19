@@ -7,7 +7,7 @@ namespace HotelGenericoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Administrador")]
+[Authorize]
 public class CatRolUsuarioController : ControllerBase
 {
     private readonly ICatRolUsuarioService _service;
@@ -32,6 +32,7 @@ public class CatRolUsuarioController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Create(CatRolUsuarioCreateDto dto)
     {
         var result = await _service.CreateAsync(dto);
@@ -39,6 +40,7 @@ public class CatRolUsuarioController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Update(int id, CatRolUsuarioUpdateDto dto)
     {
         var updated = await _service.UpdateAsync(id, dto);
@@ -46,6 +48,7 @@ public class CatRolUsuarioController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _service.DeleteAsync(id);

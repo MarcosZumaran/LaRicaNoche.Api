@@ -2,9 +2,8 @@ using System.Reflection;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
-using HotelGenericoApi.Mappings;
+using HotelGenericoApi;
 using HotelGenericoApi.Data;
-using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -26,58 +25,7 @@ else
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
-// NLua
-builder.Services.AddSingleton<ILuaService, LuaService>();
-
-// Mappers
-builder.Services.AddSingleton<EstadoHabitacionMapper>();
-builder.Services.AddSingleton<RolUsuarioMapper>();
-builder.Services.AddSingleton<MetodoPagoMapper>();
-builder.Services.AddSingleton<TipoDocumentoMapper>();
-builder.Services.AddSingleton<TipoComprobanteMapper>();
-builder.Services.AddSingleton<AfectacionIgvMapper>();
-builder.Services.AddSingleton<EstadoSunatMapper>();
-builder.Services.AddSingleton<TiposHabitacionMapper>();
-builder.Services.AddSingleton<UsuarioMapper>();
-builder.Services.AddSingleton<ClienteMapper>();
-builder.Services.AddSingleton<HabitacionMapper>();
-builder.Services.AddSingleton<ProductoMapper>();
-
-// Servicios
-builder.Services.AddScoped<ICatEstadoHabitacionService, CatEstadoHabitacionService>();
-builder.Services.AddScoped<ICatRolUsuarioService, CatRolUsuarioService>();
-builder.Services.AddScoped<ICatMetodoPagoService, CatMetodoPagoService>();
-builder.Services.AddScoped<ICatTipoDocumentoService, CatTipoDocumentoService>();
-builder.Services.AddScoped<ICatTipoComprobanteService, CatTipoComprobanteService>();
-builder.Services.AddScoped<ICatAfectacionIgvService, CatAfectacionIgvService>();
-builder.Services.AddScoped<ICatEstadoSunatService, CatEstadoSunatService>();
-builder.Services.AddScoped<ITiposHabitacionService, TiposHabitacionService>();
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<IClienteService, ClienteService>();
-builder.Services.AddScoped<IHabitacionService, HabitacionService>();
-builder.Services.AddScoped<IEstanciaService, EstanciaService>();
-builder.Services.AddScoped<IProductoService, ProductoService>();
-builder.Services.AddScoped<IComprobanteService, ComprobanteService>();
-builder.Services.AddScoped<IReporteService, ReporteService>();
-builder.Services.AddScoped<IVentaService, VentaService>();
-builder.Services.AddScoped<ICierreCajaEnvioService, CierreCajaEnvioService>();
-builder.Services.AddScoped<IPdfService, PdfService>();
-builder.Services.AddScoped<IConfiguracionHotelService, ConfiguracionHotelService>();
-builder.Services.AddScoped<IValidadorEstadoService, ValidadorEstadoService>();
-
-// HttpClient tipificado para RENIEC
-builder.Services.AddHttpClient<IReniecService, ReniecService>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["VerificaPE:BaseUrl"]!);
-    client.DefaultRequestHeaders.Authorization =
-        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", builder.Configuration["VerificaPE:ApiKey"]);
-});
-
-// Setup
-builder.Services.AddScoped<SetupService>();
-
-// Transacciones
-builder.Services.AddScoped<IDbTransactionManager, SqlServerTransactionManager>();
+builder.Services.AddApplicationServices(builder.Configuration);
 
 // Rate Limiting
 builder.Services.AddRateLimiter(options =>
