@@ -61,22 +61,21 @@ public class SetupService
         var rolRecepcion = await _db.RolesUsuario.FirstAsync(r => r.Nombre == "Recepcionista");
         var rolLimpieza = await _db.RolesUsuario.FirstAsync(r => r.Nombre == "Limpieza");
 
-        // Definir usuarios por defecto
-        var usuariosPorDefecto = new (string Username, int IdRol)[]
+        // Definir usuarios por defecto con contraseñas conocidas en desarrollo
+        var usuariosPorDefecto = new (string Username, int IdRol, string Password)[]
         {
-        ("admin", rolAdmin.IdRol),
-        ("recepcion", rolRecepcion.IdRol),
-        ("limpieza", rolLimpieza.IdRol)
+        ("admin", rolAdmin.IdRol, "Admin123!"),
+        ("recepcion", rolRecepcion.IdRol, "Recepcion123!"),
+        ("limpieza", rolLimpieza.IdRol, "Limpieza123!")
         };
 
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
-            foreach (var (username, idRol) in usuariosPorDefecto)
+            foreach (var (username, idRol, password) in usuariosPorDefecto)
             {
                 if (!await _db.Usuarios.AnyAsync(u => u.Username == username))
                 {
-                    var password = GenerarPasswordSeguro();
                     _db.Usuarios.Add(new Usuario
                     {
                         Username = username,
@@ -84,12 +83,15 @@ public class SetupService
                         IdRol = idRol,
                         FechaCreacion = DateTime.UtcNow,
                         EstaActivo = true,
-                        DebeCambiarPassword = true
+                        DebeCambiarPassword = false
                     });
 
-                    _logger.LogWarning(
-                        "Usuario creado: {Username}. Cambiar contraseña al iniciar sesión.",
-                        username);
+                    _logger.LogInformation(
+                        "Usuario creado: {Username} / {Password} (Rol: {Rol})",
+                        username, password,
+                        usuariosPorDefecto.First(u => u.Username == username).IdRol == rolAdmin.IdRol ? "Administrador"
+                        : username == "recepcion" ? "Recepcionista"
+                        : "Limpieza");
                 }
             }
 
@@ -103,12 +105,5 @@ public class SetupService
         }
     }
 
-    private static string GenerarPasswordSeguro(int longitud = 16)
-    {
-        const string caracteresValidos = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*()_-+=";
-        var bytes = new byte[longitud];
-        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
-        rng.GetBytes(bytes);
-        return new string(bytes.Select(b => caracteresValidos[b % caracteresValidos.Length]).ToArray());
-    }
+
 }
