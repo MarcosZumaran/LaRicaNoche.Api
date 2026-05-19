@@ -25,5 +25,6 @@ public enum BusinessErrorCode
     TransicionNotFound,
     ValidationError,
     ClientHasDependencies,
-    UserDuplicate
+    UserDuplicate,
+    UserHasActiveDependencies
 }

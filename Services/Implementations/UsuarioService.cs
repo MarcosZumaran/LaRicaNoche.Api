@@ -120,10 +120,17 @@ public class UsuarioService : IUsuarioService
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var entity = await _db.Usuarios.FindAsync(id);
-        if (entity is null) return false;
+        var usuario = await _db.Usuarios.FindAsync(id);
+        if (usuario is null) return false;
 
-        entity.EstaActivo = false;
+        bool tieneVentas = await _db.Ventas.AnyAsync(v => v.IdUsuario == id);
+        bool tieneReservas = await _db.Reservas.AnyAsync(r => r.IdUsuario == id);
+
+        if (tieneVentas || tieneReservas)
+            throw new BusinessRuleViolationException(BusinessErrorCode.UserHasActiveDependencies,
+                "No se puede desactivar al usuario porque tiene ventas o reservas asociadas.");
+
+        usuario.EstaActivo = false;
         await _db.SaveChangesAsync();
         return true;
     }

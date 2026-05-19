@@ -109,15 +109,10 @@ public class ClienteController : ControllerBase
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<IActionResult> ConsultarReniec(string dni)
     {
-        try
-        {
-            var result = await _reniecService.ConsultarDniAsync(dni);
-            return Ok(result);
-        }
-        catch (HttpRequestException ex)
-        {
-            return StatusCode(502, new { mensaje = "Error al consultar RENIEC", detalle = ex.Message });
-        }
+        var result = await _reniecService.ConsultarDniAsync(dni);
+        if (result is null)
+            return NotFound(new { mensaje = "DNI no encontrado en RENIEC." });
+        return Ok(result);
     }
 
     /// <summary>Busca clientes por nombre, documento u otros criterios.</summary>
