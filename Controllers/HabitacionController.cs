@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
@@ -91,11 +93,39 @@ public class HabitacionController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Parchea una habitación: cambia estado o actualiza datos según el body.</summary>
+    [HttpPatch("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> Patch(int id, [FromBody] HabitacionPatchDto dto)
+    {
+        if (dto.IdEstado.HasValue)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim is null || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var ok = await _habitacionService.CambiarEstadoAsync(id, dto.IdEstado.Value, userId);
+            if (!ok) return NotFound();
+            return NoContent();
+        }
+
+        var habitacion = await _habitacionService.GetByIdAsync(id);
+        if (habitacion == null) return NotFound();
+
+        if (dto.NumeroHabitacion != null) habitacion.NumeroHabitacion = dto.NumeroHabitacion;
+        if (dto.Piso.HasValue) habitacion.Piso = dto.Piso.Value;
+        if (dto.Descripcion != null) habitacion.Descripcion = dto.Descripcion;
+        if (dto.IdTipo.HasValue) habitacion.IdTipo = dto.IdTipo.Value;
+        if (dto.PrecioNoche.HasValue) habitacion.PrecioNoche = dto.PrecioNoche.Value;
+
+        var result = await _habitacionService.UpdateAsync(id, habitacion);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     /// <summary>Cambia el estado de una habitación validando transiciones permitidas.</summary>
-    /// <param name="idHabitacion">ID de la habitación.</param>
-    /// <param name="idNuevoEstado">ID del nuevo estado.</param>
-    /// <param name="idUsuario">ID del usuario que realiza el cambio.</param>
-    /// <param name="observacion">Observación opcional.</param>
     [HttpPatch("{idHabitacion}/estado")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

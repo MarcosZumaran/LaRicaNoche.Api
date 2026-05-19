@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 
@@ -54,14 +57,20 @@ public class EstanciaController : ControllerBase
     }
 
     /// <summary>Registra el check-out de una estancia, liberando la habitación a limpieza.</summary>
-    /// <param name="idEstancia">ID de la estancia.</param>
-    /// <param name="idUsuario">ID del usuario que realiza el checkout.</param>
     [HttpPost("{idEstancia}/checkout")]
     [ProducesResponseType(typeof(Estancia), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Estancia>> Checkout(int idEstancia, [FromQuery] int idUsuario)
+    public async Task<ActionResult<Estancia>> Checkout(int idEstancia, [FromQuery] int? idUsuario = null)
     {
-        var result = await _estanciaService.CheckoutAsync(idEstancia, idUsuario);
+        if (!idUsuario.HasValue)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim is null || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+            idUsuario = userId;
+        }
+
+        var result = await _estanciaService.CheckoutAsync(idEstancia, idUsuario.Value);
         if (result == null)
             return NotFound();
         return Ok(result);
@@ -82,8 +91,6 @@ public class EstanciaController : ControllerBase
     }
 
     /// <summary>Registra un consumo (producto) en una estancia activa.</summary>
-    /// <param name="idEstancia">ID de la estancia.</param>
-    /// <param name="item">Detalle del consumo (producto, cantidad, precio).</param>
     [HttpPost("{idEstancia}/consumo")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -92,6 +99,88 @@ public class EstanciaController : ControllerBase
         var result = await _estanciaService.AddConsumoAsync(idEstancia, item);
         if (!result)
             return BadRequest();
+        return Ok();
+    }
+
+    /// <summary>Obtiene los consumos de una estancia.</summary>
+    [HttpGet("{id}/consumos")]
+    [ProducesResponseType(typeof(List<ItemConsumoResponseDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<ItemConsumoResponseDto>>> GetConsumos(int id)
+    {
+        var result = await _estanciaService.GetConsumosAsync(id);
+        return Ok(result);
+    }
+
+    /// <summary>Actualiza un consumo en una estancia.</summary>
+    [HttpPut("{id}/consumo/{idItem}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> UpdateConsumo(int id, int idItem, [FromBody] ActualizarConsumoDto dto)
+    {
+        var result = await _estanciaService.UpdateConsumoAsync(idItem, dto.Cantidad);
+        if (!result)
+            return NotFound();
+        return Ok();
+    }
+
+    /// <summary>Elimina un consumo de una estancia.</summary>
+    [HttpDelete("{id}/consumo/{idItem}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DeleteConsumo(int id, int idItem)
+    {
+        var result = await _estanciaService.DeleteConsumoAsync(idItem);
+        if (!result)
+            return NotFound();
+        return Ok();
+    }
+
+    /// <summary>Obtiene las reservas de una habitación.</summary>
+    [HttpGet("reservas/{idHabitacion}")]
+    [ProducesResponseType(typeof(List<ReservaResponseDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<ReservaResponseDto>>> GetReservasByHabitacion(int idHabitacion)
+    {
+        var result = await _estanciaService.GetReservasByHabitacionAsync(idHabitacion);
+        return Ok(result);
+    }
+
+    /// <summary>Realiza check-in creando una estancia y ocupando la habitación.</summary>
+    [HttpPost("checkin")]
+    [ProducesResponseType(typeof(Estancia), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<Estancia>> Checkin([FromBody] CheckinCreateDto dto)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim is null || !int.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var result = await _estanciaService.CheckinAsync(dto, userId);
+        return CreatedAtAction(nameof(GetById), new { id = result.IdEstancia }, result);
+    }
+
+    /// <summary>Crea una nueva reserva.</summary>
+    [HttpPost("reserva")]
+    [ProducesResponseType(typeof(Reserva), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<Reserva>> CreateReserva([FromBody] ReservaCreateDto dto)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim is null || !int.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var result = await _estanciaService.CreateReservaAsync(dto, userId);
+        return CreatedAtAction(nameof(GetById), new { id = result.IdReserva }, result);
+    }
+
+    /// <summary>Cancela una reserva existente.</summary>
+    [HttpPut("reserva/{id}/cancelar")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> CancelarReserva(int id)
+    {
+        var result = await _estanciaService.CancelarReservaAsync(id);
+        if (!result)
+            return NotFound();
         return Ok();
     }
 }
