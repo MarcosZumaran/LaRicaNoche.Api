@@ -56,9 +56,45 @@ public class PdfService : IPdfService
 
     public async Task<byte[]> GenerarPdfEstanciaAsync(int idEstancia)
     {
+        var estancia = await _db.Estancias
+            .Include(e => e.Habitacion)
+            .Include(e => e.ClienteTitular)
+            .FirstOrDefaultAsync(e => e.IdEstancia == idEstancia);
+
+        if (estancia == null)
+            throw new BusinessRuleViolationException(BusinessErrorCode.ComprobanteNotFound, "Estancia no encontrada.");
+
+        // Intentar obtener un comprobante asociado
         var comp = await _db.Comprobantes.FirstOrDefaultAsync(c => c.IdEstancia == idEstancia);
-        if (comp == null) throw new BusinessRuleViolationException(BusinessErrorCode.ComprobanteNotFound, "Comprobante de estancia no encontrado.");
-        return await GenerarPdfComprobanteAsync(comp.IdComprobante);
+
+        if (comp != null)
+            return await GenerarPdfComprobanteAsync(comp.IdComprobante);
+
+        // Si no hay comprobante, generar uno temporal con los datos de la estancia
+        // Calcular IGV correcto (Perú: 18% sobre la base, total = base * 1.18)
+        decimal total = estancia.MontoTotal;
+        decimal baseImponible = total / 1.18m;
+        decimal igv = total - baseImponible;
+
+        var comprobanteTemporal = new Models.Comprobante
+        {
+            Serie = "E",
+            Correlativo = estancia.IdEstancia,
+            FechaEmision = estancia.FechaCheckin,
+            MontoTotal = total,
+            IgvMonto = igv,
+            ClienteNombre = estancia.ClienteTitular != null
+                ? $"{estancia.ClienteTitular.Nombres} {estancia.ClienteTitular.Apellidos}"
+                : "CLIENTE ANÓNIMO",
+            ClienteDocumentoNum = estancia.ClienteTitular?.Documento ?? "—",
+            TipoComprobante = "03",
+            MetodoPago = "005"
+        };
+
+        string numeroHabitacion = estancia.Habitacion?.NumeroHabitacion ?? "—";
+        string fechasHospedaje = $"{estancia.FechaCheckin:dd/MM/yyyy} - {estancia.FechaCheckoutPrevista:dd/MM/yyyy}";
+
+        return await GenerarPdfComprobanteAsync(comprobanteTemporal, numeroHabitacion, fechasHospedaje, null);
     }
 
     // --- Lógica de generación de PDF con QuestPDF ---
@@ -143,7 +179,7 @@ public class PdfService : IPdfService
 
                     // 3. Totales
                     col.Item().AlignRight().Text($"Subtotal: S/ {comp.MontoTotal - comp.IgvMonto:F2}");
-                    col.Item().AlignRight().Text($"IGV (10.5%): S/ {comp.IgvMonto:F2}");
+                    col.Item().AlignRight().Text($"IGV (18%): S/ {comp.IgvMonto:F2}");
                     col.Item().AlignRight().Text($"TOTAL: S/ {comp.MontoTotal:F2}").FontSize(12).Bold();
                 });
             });
