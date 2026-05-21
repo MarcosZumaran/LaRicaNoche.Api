@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
 using HotelGenericoApi.Data;
 using HotelGenericoApi.DTOs.Request;
 using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Hubs;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 
@@ -12,11 +14,13 @@ public class EstanciaService : IEstanciaService
 {
     private readonly HotelDbContext _db;
     private readonly ILogger<EstanciaService> _logger;
+    private readonly IHubContext<HabitacionHub> _hubContext;
 
-    public EstanciaService(HotelDbContext db, ILogger<EstanciaService> logger)
+    public EstanciaService(HotelDbContext db, ILogger<EstanciaService> logger, IHubContext<HabitacionHub> hubContext)
     {
         _db = db;
         _logger = logger;
+        _hubContext = hubContext;
     }
 
     public async Task<List<Estancia>> GetAllAsync()
@@ -54,10 +58,9 @@ public class EstanciaService : IEstanciaService
         try
         {
             _db.Estancias.Add(estancia);
-            await _db.SaveChangesAsync(); // para obtener IdEstancia
+            await _db.SaveChangesAsync();
 
-            // Cambiar estado de habitación a "Ocupada"
-            habitacion.IdEstado = 2; // Ocupada
+            habitacion.IdEstado = 2;
             habitacion.FechaUltimoCambio = DateTime.UtcNow;
 
             _logger.LogInformation("Check-in realizado: Estancia {Id}, Habitación {Numero}", estancia.IdEstancia, habitacion.NumeroHabitacion);
@@ -85,18 +88,17 @@ public class EstanciaService : IEstanciaService
         estancia.FechaCheckoutReal = DateTime.UtcNow;
         estancia.Estado = "Finalizada";
 
-        // Liberar habitación a "Limpieza" (id 3)
         if (estancia.Habitacion != null)
         {
-            estancia.Habitacion.IdEstado = 3; // Limpieza
+            estancia.Habitacion.IdEstado = 3;
             estancia.Habitacion.FechaUltimoCambio = DateTime.UtcNow;
             estancia.Habitacion.UsuarioCambio = idUsuario;
 
             _db.HistorialEstadoHabitaciones.Add(new HistorialEstadoHabitacion
             {
                 IdHabitacion = estancia.Habitacion.IdHabitacion,
-                IdEstadoAnterior = 2, // Ocupada
-                IdEstadoNuevo = 3,    // Limpieza
+                IdEstadoAnterior = 2,
+                IdEstadoNuevo = 3,
                 FechaCambio = DateTime.UtcNow,
                 IdUsuario = idUsuario
             });
@@ -104,6 +106,15 @@ public class EstanciaService : IEstanciaService
 
         await _db.SaveChangesAsync();
         _logger.LogInformation("Check-out realizado: Estancia {Id}, Habitación {Numero}", idEstancia, estancia.Habitacion?.NumeroHabitacion);
+
+        // Notificar cambio de estado a Limpieza
+        await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+        {
+            idHabitacion = estancia.Habitacion!.IdHabitacion,
+            numero = estancia.Habitacion.NumeroHabitacion,
+            nuevoEstado = "Limpieza"
+        });
+
         return estancia;
     }
 
@@ -239,6 +250,15 @@ public class EstanciaService : IEstanciaService
             _logger.LogInformation("Check-in realizado: Estancia {Id}, Habitación {Numero}", estancia.IdEstancia, habitacion.NumeroHabitacion);
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            // Notificar a todos los clientes (incluyendo el idHabitacion para navegación)
+            await _hubContext.Clients.All.SendAsync("NuevaEstancia", new
+            {
+                idEstancia = estancia.IdEstancia,
+                idHabitacion = estancia.IdHabitacion,
+                numeroHabitacion = habitacion.NumeroHabitacion,
+                cliente = $"{cliente.Nombres} {cliente.Apellidos}"
+            });
 
             return estancia;
         }

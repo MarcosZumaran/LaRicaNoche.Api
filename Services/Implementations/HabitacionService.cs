@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
 using HotelGenericoApi.Data;
 using HotelGenericoApi.DTOs.Response;
+using HotelGenericoApi.Hubs;
 using HotelGenericoApi.Models;
 using HotelGenericoApi.Services.Interfaces;
 
@@ -11,11 +13,13 @@ public class HabitacionService : IHabitacionService
 {
     private readonly HotelDbContext _db;
     private readonly ILogger<HabitacionService> _logger;
+    private readonly IHubContext<HabitacionHub> _hubContext;
 
-    public HabitacionService(HotelDbContext db, ILogger<HabitacionService> logger)
+    public HabitacionService(HotelDbContext db, ILogger<HabitacionService> logger, IHubContext<HabitacionHub> hubContext)
     {
         _db = db;
         _logger = logger;
+        _hubContext = hubContext;
     }
 
     public async Task<List<Habitacion>> GetAllAsync()
@@ -109,6 +113,15 @@ public class HabitacionService : IHabitacionService
             await transaction.CommitAsync();
 
             _logger.LogInformation("Habitación {Id} cambió de estado {Anterior} a {Nuevo}", idHabitacion, estadoAnterior, idNuevoEstado);
+
+            // Enviar notificación en tiempo real a todos los clientes conectados
+            await _hubContext.Clients.All.SendAsync("EstadoHabitacionCambiado", new
+            {
+                idHabitacion,
+                numero = habitacion.NumeroHabitacion,
+                nuevoEstado = estadoNuevo.Nombre
+            });
+
             return true;
         }
         catch (Exception ex)
@@ -136,22 +149,12 @@ public class HabitacionService : IHabitacionService
         var estados = await _db.EstadosHabitacion
             .ToDictionaryAsync(e => e.IdEstado, e => e.Nombre);
 
-        // Reservas activas (para decidir si mostrar "CancelarReserva")
+        // Reservas activas
         var idsHabitacion = habitaciones.Select(h => h.IdHabitacion).ToList();
         var reservasActivas = await _db.Reservas
             .Where(r => idsHabitacion.Contains(r.IdHabitacion) && r.Estado == "Confirmada")
             .GroupBy(r => r.IdHabitacion)
             .ToDictionaryAsync(g => g.Key, g => g.First());
-
-        // Mapeo de ID de estado destino -> etiqueta de acción
-        var mapaAccion = new Dictionary<int, string>
-        {
-            { 2, "CheckIn" },      // transición a "Ocupada"
-            { 3, "FinalizarLimpieza" }, // transición a "Limpieza" (cuando la habitación está ocupada → se hace CheckOut real, pero desde el front se llamará "Salida")
-            { 1, "Habilitar" },    // transición a "Disponible" (desde limpieza o mantenimiento)
-            { 4, "Mantenimiento" },
-            { 5, "Reservar" }      // transición a "En Reserva"
-        };
 
         return habitaciones.Select(h =>
         {
@@ -161,27 +164,20 @@ public class HabitacionService : IHabitacionService
 
             foreach (var t in transiciones.Where(t => t.IdEstadoActual == h.IdEstado))
             {
-                // Si la transición es a "Ocupada" (2) y NO hay reserva activa → CheckIn
                 if (t.IdEstadoSiguiente == 2 && !reservasActivas.ContainsKey(h.IdHabitacion))
                     acciones.Add("CheckIn");
-                // Si la transición es a "Ocupada" (2) y SÍ hay reserva activa → CheckIn (con reserva directa)
                 else if (t.IdEstadoSiguiente == 2 && reservasActivas.ContainsKey(h.IdHabitacion))
                     acciones.Add("CheckIn");
-                // Si la transición es a "Limpieza" (3) desde "Ocupada" (2) → CheckOut
                 else if (t.IdEstadoActual == 2 && t.IdEstadoSiguiente == 3)
                     acciones.Add("CheckOut");
-                // Mantenimiento
                 else if (t.IdEstadoSiguiente == 4)
                     acciones.Add("Mantenimiento");
-                // Habilitar (volver a Disponible)
                 else if (t.IdEstadoSiguiente == 1)
                     acciones.Add("Habilitar");
-                // Reservar (solo si está Disponible o En Reserva)
                 else if (t.IdEstadoSiguiente == 5)
                     acciones.Add("Reservar");
             }
 
-            // Agregar "CancelarReserva" si hay reserva activa
             if (reservasActivas.ContainsKey(h.IdHabitacion))
                 acciones.Add("CancelarReserva");
 

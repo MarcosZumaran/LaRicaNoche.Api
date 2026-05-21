@@ -219,7 +219,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 // La ruta debe coincidir con el frontend: /hotelhub
-app.MapHub<HabitacionHub>("/hotelhub");
+app.MapHub<HabitacionHub>("/hotelhub").AllowAnonymous();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
