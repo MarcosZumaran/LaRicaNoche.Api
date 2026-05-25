@@ -134,52 +134,38 @@ public class HabitacionService : IHabitacionService
 
     public async Task<List<HabitacionEstadoActualDto>> GetEstadoActualAsync()
     {
+        var hoy = DateTime.UtcNow.Date;
+
         var habitaciones = await _db.Habitaciones
             .Include(h => h.Tipo)
             .Include(h => h.Estado)
             .Include(h => h.Estancias.Where(e => e.FechaCheckoutReal == null))
                 .ThenInclude(e => e.ClienteTitular)
+            .Include(h => h.Reservas.Where(r => r.Estado == "Confirmada" && r.FechaEntradaPrevista.Date == hoy))
             .AsNoTracking()
             .ToListAsync();
 
         // Cargar transiciones permitidas
         var transiciones = await _db.TransicionesEstado.ToListAsync();
 
-        // Estados
-        var estados = await _db.EstadosHabitacion
-            .ToDictionaryAsync(e => e.IdEstado, e => e.Nombre);
-
-        // Reservas activas
-        var idsHabitacion = habitaciones.Select(h => h.IdHabitacion).ToList();
-        var reservasActivas = await _db.Reservas
-            .Where(r => idsHabitacion.Contains(r.IdHabitacion) && r.Estado == "Confirmada")
-            .GroupBy(r => r.IdHabitacion)
-            .ToDictionaryAsync(g => g.Key, g => g.First());
-
         return habitaciones.Select(h =>
         {
             var estanciaActiva = h.Estancias.FirstOrDefault(e => e.FechaCheckoutReal == null);
+            var reservaHoy = h.Reservas.FirstOrDefault();
 
             var acciones = new List<string>();
 
             foreach (var t in transiciones.Where(t => t.IdEstadoActual == h.IdEstado))
             {
-                if (t.IdEstadoSiguiente == 2 && !reservasActivas.ContainsKey(h.IdHabitacion))
-                    acciones.Add("CheckIn");
-                else if (t.IdEstadoSiguiente == 2 && reservasActivas.ContainsKey(h.IdHabitacion))
-                    acciones.Add("CheckIn");
-                else if (t.IdEstadoActual == 2 && t.IdEstadoSiguiente == 3)
-                    acciones.Add("CheckOut");
-                else if (t.IdEstadoSiguiente == 4)
-                    acciones.Add("Mantenimiento");
-                else if (t.IdEstadoSiguiente == 1)
-                    acciones.Add("Habilitar");
-                else if (t.IdEstadoSiguiente == 5)
-                    acciones.Add("Reservar");
+                if (t.IdEstadoSiguiente == 2) acciones.Add("CheckIn");
+                else if (t.IdEstadoActual == 2 && t.IdEstadoSiguiente == 3) acciones.Add("CheckOut");
+                else if (t.IdEstadoSiguiente == 4) acciones.Add("Mantenimiento");
+                else if (t.IdEstadoSiguiente == 1) acciones.Add("Habilitar");
+                else if (t.IdEstadoSiguiente == 5) acciones.Add("Reservar");
             }
 
-            if (reservasActivas.ContainsKey(h.IdHabitacion))
-                acciones.Add("CancelarReserva");
+            // CancelarReserva
+            if (reservaHoy != null) acciones.Add("CancelarReserva");
 
             return new HabitacionEstadoActualDto(
                 IdHabitacion: h.IdHabitacion,
@@ -198,7 +184,7 @@ public class HabitacionService : IHabitacionService
                 AccionesDisponibles: acciones,
                 FechaCheckin: estanciaActiva?.FechaCheckin,
                 FechaCheckoutPrevista: estanciaActiva?.FechaCheckoutPrevista,
-                FechaReservaEntrada: null
+                FechaReservaEntrada: reservaHoy?.FechaEntradaPrevista
             );
         }).ToList();
     }
