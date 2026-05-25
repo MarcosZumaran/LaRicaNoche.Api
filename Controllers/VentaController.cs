@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using HotelGenericoApi.Models;
+using HotelGenericoApi.DTOs.Request;
+using HotelGenericoApi.DTOs.Response;
 using HotelGenericoApi.Services.Interfaces;
 
 namespace HotelGenericoApi.Controllers;
@@ -22,39 +23,43 @@ public class VentaController : ControllerBase
 
     /// <summary>Obtiene todas las ventas registradas.</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(List<Venta>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<Venta>>> GetAll()
+    [ProducesResponseType(typeof(List<VentaResponseDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<VentaResponseDto>>> GetAll()
     {
         var ventas = await _ventaService.GetAllAsync();
         return Ok(ventas);
     }
 
     /// <summary>Obtiene una venta por su ID con ítems y producto.</summary>
-    /// <param name="id">ID de la venta.</param>
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(Venta), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(VentaResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Venta>> GetById(int id)
+    public async Task<ActionResult<VentaResponseDto>> GetById(int id)
     {
         var venta = await _ventaService.GetByIdAsync(id);
         if (venta == null)
-            return NotFound();
+            return NotFound(new { mensaje = "Venta no encontrada." });
         return Ok(venta);
     }
 
     /// <summary>Registra una nueva venta con sus ítems.</summary>
-    /// <param name="venta">Datos de la venta incluyendo ítems.</param>
     [HttpPost]
-    [ProducesResponseType(typeof(Venta), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(VentaResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<Venta>> Create([FromBody] Venta venta)
+    public async Task<ActionResult<VentaResponseDto>> Create([FromBody] VentaCreateDto dto)
     {
-        var result = await _ventaService.CreateAsync(venta);
-        return CreatedAtAction(nameof(GetById), new { id = result.IdVenta }, result);
+        try
+        {
+            var result = await _ventaService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = result.IdVenta }, result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
     }
 
     /// <summary>Elimina una venta por su ID.</summary>
-    /// <param name="id">ID de la venta.</param>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -62,7 +67,7 @@ public class VentaController : ControllerBase
     {
         var result = await _ventaService.DeleteAsync(id);
         if (!result)
-            return NotFound();
+            return NotFound(new { mensaje = "Venta no encontrada." });
         return NoContent();
     }
 }
