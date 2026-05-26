@@ -44,4 +44,24 @@ public class ProductoController : ControllerBase
         var deleted = await _service.DeleteAsync(id);
         return deleted ? NoContent() : NotFound();
     }
+
+    /// <summary>Agrega stock a un producto existente.</summary>
+    /// <param name="id">ID del producto.</param>
+    /// <param name="dto">Cantidad a agregar.</param>
+    [HttpPost("{id}/entrada-stock")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddStock(int id, [FromBody] EntradaStockDto dto)
+    {
+        try
+        {
+            var result = await _service.AddStockAsync(id, dto.Cantidad);
+            return result ? NoContent() : NotFound(new { mensaje = "Producto no encontrado." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
 }

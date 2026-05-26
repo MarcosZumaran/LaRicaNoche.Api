@@ -84,4 +84,17 @@ public class ProductoService : IProductoService
             p.ImagenUrl
         );
     }
+
+    public async Task<bool> AddStockAsync(int id, int cantidad)
+    {
+        if (cantidad <= 0)
+            throw new InvalidOperationException("La cantidad debe ser mayor a cero.");
+
+        var producto = await _db.Productos.FindAsync(id);
+        if (producto is null) return false;
+
+        producto.Stock = (producto.Stock ?? 0) + cantidad;
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }
