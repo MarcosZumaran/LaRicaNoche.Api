@@ -34,7 +34,7 @@ public class VentaService : IVentaService
                 ClienteNombre = v.Cliente != null
                     ? $"{v.Cliente.Nombres} {v.Cliente.Apellidos}"
                     : null,
-                FechaVenta = v.FechaVenta,
+                FechaVenta = (DateTime)v.FechaVenta,
                 Total = v.Total,
                 MetodoPago = v.MetodoPagoNavigation != null
                     ? v.MetodoPagoNavigation.Descripcion
@@ -46,7 +46,7 @@ public class VentaService : IVentaService
                     NombreProducto = i.Producto != null ? i.Producto.Nombre : null,
                     Cantidad = i.Cantidad,
                     PrecioUnitario = i.PrecioUnitario,
-                    Subtotal = i.Subtotal ?? (i.PrecioUnitario * i.Cantidad)
+                    Subtotal = i.Subtotal
                 }).ToList()
             })
             .ToListAsync();
@@ -69,7 +69,7 @@ public class VentaService : IVentaService
             ClienteNombre = venta.Cliente != null
                 ? $"{venta.Cliente.Nombres} {venta.Cliente.Apellidos}"
                 : null,
-            FechaVenta = venta.FechaVenta,
+            FechaVenta = (DateTime)venta.FechaVenta,
             Total = venta.Total,
             MetodoPago = venta.MetodoPagoNavigation != null
                 ? venta.MetodoPagoNavigation.Descripcion
@@ -81,7 +81,7 @@ public class VentaService : IVentaService
                 NombreProducto = i.Producto != null ? i.Producto.Nombre : null,
                 Cantidad = i.Cantidad,
                 PrecioUnitario = i.PrecioUnitario,
-                Subtotal = i.Subtotal ?? (i.PrecioUnitario * i.Cantidad)
+                Subtotal = i.Subtotal
             }).ToList()
         };
     }
@@ -132,12 +132,12 @@ public class VentaService : IVentaService
             var comprobante = new Comprobante
             {
                 IdVenta = venta.IdVenta,
-                TipoComprobante = "03", // Boleta
+                TipoComprobante = "03",
                 Serie = "B001",
                 Correlativo = await ObtenerSiguienteCorrelativoAsync(),
                 FechaEmision = DateTime.UtcNow,
                 MontoTotal = total,
-                IgvMonto = total * 0.18m, // 18% IGV
+                IgvMonto = total * 0.18m,
                 ClienteDocumentoTipo = venta.Cliente?.TipoDocumento,
                 ClienteDocumentoNum = venta.Cliente?.Documento,
                 ClienteNombre = venta.Cliente != null
@@ -172,7 +172,6 @@ public class VentaService : IVentaService
 
         if (venta == null) return false;
 
-        // Devolver stock al eliminar una venta
         if (venta.ItemsVenta != null)
         {
             foreach (var item in venta.ItemsVenta)
@@ -185,7 +184,6 @@ public class VentaService : IVentaService
             }
         }
 
-        // Eliminar comprobante asociado
         var comprobante = await _db.Comprobantes
             .FirstOrDefaultAsync(c => c.IdVenta == id);
         if (comprobante != null)

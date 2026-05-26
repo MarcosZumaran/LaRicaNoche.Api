@@ -58,8 +58,7 @@ builder.Services.AddRateLimiter(options =>
     {
         if (context.User?.Identity?.IsAuthenticated == true)
         {
-            var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                         ?? "unknown";
+            var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
             return RateLimitPartition.GetFixedWindowLimiter(userId,
                 _ => new FixedWindowRateLimiterOptions
                 {
