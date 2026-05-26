@@ -80,7 +80,8 @@ public class ProductoService : IProductoService
             p.Stock,
             p.StockMinimo,
             p.UnidadMedida,
-            p.CreatedAt
+            p.CreatedAt,
+            p.ImagenUrl
         );
     }
 }

@@ -12,6 +12,7 @@ public class Producto
     public int? Stock { get; set; }
     public int? StockMinimo { get; set; }
     public string? UnidadMedida { get; set; }
+    public string? ImagenUrl { get; set; }
     public DateTime? CreatedAt { get; set; }
 
     // Navegación

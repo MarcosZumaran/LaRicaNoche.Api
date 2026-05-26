@@ -10,4 +10,5 @@ public sealed record ProductoUpdateDto
     public int? Stock { get; init; }
     public int? StockMinimo { get; init; }
     public string? UnidadMedida { get; init; }
+    public string? ImagenUrl { get; init; }
 }

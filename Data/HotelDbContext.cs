@@ -104,6 +104,7 @@ public class HotelDbContext : DbContext
             entity.Property(e => e.IdCategoria).HasColumnName("id_categoria").ValueGeneratedOnAdd();
             entity.Property(e => e.Nombre).HasColumnName("nombre").IsRequired().HasMaxLength(50);
             entity.Property(e => e.Descripcion).HasColumnName("descripcion").HasMaxLength(100);
+            entity.Property(e => e.MostrarEnVentas).HasColumnName("mostrar_en_ventas").IsRequired().HasDefaultValue(true);
         });
 
         modelBuilder.Entity<EstadoHabitacion>(entity =>

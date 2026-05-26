@@ -11,5 +11,6 @@ public sealed record ProductoResponseDto(
     int? Stock,
     int? StockMinimo,
     string? UnidadMedida,
-    DateTime? CreatedAt
+    DateTime? CreatedAt,
+    string? ImagenUrl
 );

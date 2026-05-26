@@ -28,4 +28,6 @@ public sealed record ProductoCreateDto
 
     [StringLength(10)]
     public string? UnidadMedida { get; init; } = "NIU";
+
+    public string? ImagenUrl { get; init; }
 }

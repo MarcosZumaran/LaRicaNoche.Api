@@ -504,4 +504,12 @@ CREATE INDEX ix_login_attempt_ip_fecha ON login_attempt(ip_address, attempted_at
 CREATE INDEX IX_login_attempt_username_at ON login_attempt(username, attempted_at);
 GO
 
+--  campo imagen_url
+ALTER TABLE producto ADD imagen_url NVARCHAR(255) NULL;
+
+--  campo mostrar_en_ventas
+ALTER TABLE categoria_producto ADD mostrar_en_ventas BIT NOT NULL DEFAULT 1;
+
+GO
+
 PRINT 'Base de datos HotelDB creada con éxito según el nuevo estándar.';
