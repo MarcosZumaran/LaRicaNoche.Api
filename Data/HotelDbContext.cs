@@ -324,6 +324,7 @@ public class HotelDbContext : DbContext
             entity.HasOne(e => e.AfectacionIgv).WithMany().HasForeignKey(e => e.IdAfectacionIgv).HasConstraintName("fk_producto_afectacion");
             entity.HasOne(e => e.Categoria).WithMany().HasForeignKey(e => e.IdCategoria).HasConstraintName("fk_producto_categoria");
             entity.HasIndex(e => e.CodigoSunat).HasDatabaseName("ix_producto_codigo_sunat");
+            entity.Property(e => e.ImagenUrl).HasColumnName("imagen_url").HasMaxLength(255);
         });
 
         modelBuilder.Entity<ItemEstancia>(entity =>
