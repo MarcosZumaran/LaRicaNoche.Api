@@ -116,10 +116,17 @@ public class VentaService : IVentaService
                 total += producto.PrecioUnitario * itemDto.Cantidad;
             }
 
+            // Cargar el cliente desde la BD si se especificó uno
+            Cliente? cliente = null;
+            if (dto.IdCliente.HasValue)
+            {
+                cliente = await _db.Clientes.FindAsync(dto.IdCliente.Value);
+            }
+
             var venta = new Venta
             {
                 IdCliente = dto.IdCliente,
-                IdUsuario = idUsuario, // Asignar el ID del usuario que realiza la venta
+                IdUsuario = idUsuario,
                 FechaVenta = DateTime.UtcNow,
                 Total = total,
                 MetodoPago = dto.MetodoPago,
@@ -129,7 +136,7 @@ public class VentaService : IVentaService
             _db.Ventas.Add(venta);
             await _db.SaveChangesAsync();
 
-            // Generar comprobante automático
+            // Generar comprobante automático (ahora con el cliente cargado)
             var comprobante = new Comprobante
             {
                 IdVenta = venta.IdVenta,
@@ -139,10 +146,10 @@ public class VentaService : IVentaService
                 FechaEmision = DateTime.UtcNow,
                 MontoTotal = total,
                 IgvMonto = total * 0.18m,
-                ClienteDocumentoTipo = venta.Cliente?.TipoDocumento,
-                ClienteDocumentoNum = venta.Cliente?.Documento,
-                ClienteNombre = venta.Cliente != null
-                    ? $"{venta.Cliente.Nombres} {venta.Cliente.Apellidos}"
+                ClienteDocumentoTipo = cliente?.TipoDocumento,
+                ClienteDocumentoNum = cliente?.Documento,
+                ClienteNombre = cliente != null
+                    ? $"{cliente.Nombres} {cliente.Apellidos}"
                     : "CLIENTE ANONIMO",
                 MetodoPago = dto.MetodoPago,
                 IdEstadoSunat = 1
