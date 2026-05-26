@@ -86,7 +86,7 @@ public class VentaService : IVentaService
         };
     }
 
-    public async Task<VentaResponseDto> CreateAsync(VentaCreateDto dto)
+    public async Task<VentaResponseDto> CreateAsync(VentaCreateDto dto, int idUsuario)
     {
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
@@ -119,6 +119,7 @@ public class VentaService : IVentaService
             var venta = new Venta
             {
                 IdCliente = dto.IdCliente,
+                IdUsuario = idUsuario, // Asignar el ID del usuario que realiza la venta
                 FechaVenta = DateTime.UtcNow,
                 Total = total,
                 MetodoPago = dto.MetodoPago,
@@ -151,8 +152,8 @@ public class VentaService : IVentaService
 
             await transaction.CommitAsync();
 
-            _logger.LogInformation("Venta {Id} creada, total {Total}, comprobante {Serie}-{Correlativo}",
-                venta.IdVenta, total, comprobante.Serie, comprobante.Correlativo);
+            _logger.LogInformation("Venta {Id} creada por usuario {Usuario}, total {Total}, comprobante {Serie}-{Correlativo}",
+                venta.IdVenta, idUsuario, total, comprobante.Serie, comprobante.Correlativo);
 
             return await GetByIdAsync(venta.IdVenta)
                 ?? throw new InvalidOperationException("Error al recuperar la venta creada.");

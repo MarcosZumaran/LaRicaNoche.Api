@@ -7,7 +7,7 @@ namespace HotelGenericoApi.Services.Interfaces
     {
         Task<List<VentaResponseDto>> GetAllAsync();
         Task<VentaResponseDto?> GetByIdAsync(int id);
-        Task<VentaResponseDto> CreateAsync(VentaCreateDto dto);
+        Task<VentaResponseDto> CreateAsync(VentaCreateDto dto, int idUsuario);
         Task<bool> DeleteAsync(int id);
     }
 }

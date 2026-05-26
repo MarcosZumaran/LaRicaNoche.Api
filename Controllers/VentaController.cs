@@ -50,7 +50,14 @@ public class VentaController : ControllerBase
     {
         try
         {
-            var result = await _ventaService.CreateAsync(dto);
+            // Obtener el ID del usuario autenticado desde el token JWT
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { mensaje = "No se pudo identificar al usuario autenticado." });
+            }
+
+            var result = await _ventaService.CreateAsync(dto, userId);
             return CreatedAtAction(nameof(GetById), new { id = result.IdVenta }, result);
         }
         catch (InvalidOperationException ex)
