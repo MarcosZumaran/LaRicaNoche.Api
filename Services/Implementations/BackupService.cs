@@ -125,4 +125,13 @@ public class BackupService : IBackupService
 
         return Task.FromResult(eliminados);
     }
+
+    public Task<string?> GetBackupFilePathAsync(string fileName)
+    {
+        var safeName = Path.GetFileName(fileName);
+        var fullPath = Path.Combine(_backupDirectory, safeName);
+        if (File.Exists(fullPath))
+            return Task.FromResult(fullPath)!;
+        return Task.FromResult<string?>(null);
+    }
 }

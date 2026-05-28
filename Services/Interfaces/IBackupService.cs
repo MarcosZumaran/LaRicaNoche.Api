@@ -7,4 +7,5 @@ public interface IBackupService
     Task<string> CreateBackupAsync(string type = "Full");
     Task<List<BackupHistoryDto>> GetBackupHistoryAsync();
     Task<int> LimpiarBackupsAntiguosAsync(int dias);
+    Task<string?> GetBackupFilePathAsync(string fileName);
 }
