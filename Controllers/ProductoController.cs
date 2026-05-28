@@ -24,21 +24,19 @@ public class ProductoController : ControllerBase
         return result is not null ? Ok(result) : NotFound();
     }
 
-    /// <summary>Crea un producto nuevo, opcionalmente con imagen.</summary>
     [HttpPost]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Create([FromForm] ProductoCreateDto dto, IFormFile? file)
+    public async Task<IActionResult> Create([FromForm] ProductoCreateDto dto)
     {
-        var result = await _service.CreateAsync(dto, file);
+        var result = await _service.CreateAsync(dto, dto.File);
         return CreatedAtAction(nameof(GetById), new { id = result.IdProducto }, result);
     }
 
-    /// <summary>Actualiza un producto existente, opcionalmente con nueva imagen.</summary>
     [HttpPut("{id}")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Update(int id, [FromForm] ProductoUpdateDto dto, IFormFile? file)
+    public async Task<IActionResult> Update(int id, [FromForm] ProductoUpdateDto dto)
     {
-        var updated = await _service.UpdateAsync(id, dto, file);
+        var updated = await _service.UpdateAsync(id, dto, dto.File);
         return updated ? NoContent() : NotFound();
     }
 
@@ -49,7 +47,6 @@ public class ProductoController : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
-    /// <summary>Agrega stock a un producto existente.</summary>
     [HttpPost("{id}/entrada-stock")]
     public async Task<IActionResult> AddStock(int id, [FromBody] EntradaStockDto dto)
     {

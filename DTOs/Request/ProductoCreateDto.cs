@@ -32,4 +32,7 @@ public sealed record ProductoCreateDto
 
     [FromForm, StringLength(10)]
     public string? UnidadMedida { get; init; } = "NIU";
+
+    [FromForm]
+    public IFormFile? File { get; init; }
 }

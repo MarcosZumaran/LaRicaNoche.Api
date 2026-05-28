@@ -13,4 +13,5 @@ public sealed record ProductoUpdateDto
     [FromForm] public int? Stock { get; init; }
     [FromForm] public int? StockMinimo { get; init; }
     [FromForm] public string? UnidadMedida { get; init; }
+    [FromForm] public IFormFile? File { get; init; }
 }
