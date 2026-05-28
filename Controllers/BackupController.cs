@@ -19,6 +19,7 @@ public class BackupController : ControllerBase
         try
         {
             var filePath = await _backupService.CreateBackupAsync("Full");
+            await Task.Delay(500); // Pequeña pausa para que SQL Server libere el archivo
             var bytes = await System.IO.File.ReadAllBytesAsync(filePath);
             var fileName = Path.GetFileName(filePath);
             System.IO.File.Delete(filePath);
@@ -36,6 +37,7 @@ public class BackupController : ControllerBase
         try
         {
             var filePath = await _backupService.CreateBackupAsync("Differential");
+            await Task.Delay(500);
             var bytes = await System.IO.File.ReadAllBytesAsync(filePath);
             var fileName = Path.GetFileName(filePath);
             System.IO.File.Delete(filePath);
@@ -53,6 +55,7 @@ public class BackupController : ControllerBase
         try
         {
             var filePath = await _backupService.CreateBackupAsync("Log");
+            await Task.Delay(500);
             var bytes = await System.IO.File.ReadAllBytesAsync(filePath);
             var fileName = Path.GetFileName(filePath);
             System.IO.File.Delete(filePath);

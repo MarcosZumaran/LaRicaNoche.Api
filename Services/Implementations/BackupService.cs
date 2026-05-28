@@ -1,4 +1,3 @@
-using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using HotelGenericoApi.DTOs.Response;
@@ -10,18 +9,33 @@ public class BackupService : IBackupService
 {
     private readonly string _connectionString;
     private readonly string _databaseName;
+    private readonly string _backupDirectory;
 
     public BackupService(IConfiguration configuration)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection")!;
         var builder = new SqlConnectionStringBuilder(_connectionString);
         _databaseName = builder.InitialCatalog;
+
+        // Carpeta multiplataforma con permisos garantizados
+        if (OperatingSystem.IsWindows())
+        {
+            // Windows: carpeta dentro del proyecto (sin problemas de permisos)
+            _backupDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "backups");
+        }
+        else
+        {
+            // Linux: carpeta compartida con permisos 777
+            _backupDirectory = "/var/opt/mssql/backups";
+        }
+
+        Directory.CreateDirectory(_backupDirectory);
     }
 
     public async Task<string> CreateBackupAsync(string type = "Full")
     {
         var backupFileName = $"{_databaseName}_{type}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.bak";
-        var backupPath = Path.Combine(Path.GetTempPath(), backupFileName);
+        var backupPath = Path.Combine(_backupDirectory, backupFileName);
 
         var masterConnectionString = new SqlConnectionStringBuilder(_connectionString)
         {
@@ -90,5 +104,25 @@ public class BackupService : IBackupService
             });
         }
         return history;
+    }
+
+    public Task<int> LimpiarBackupsAntiguosAsync(int dias = 30)
+    {
+        if (!Directory.Exists(_backupDirectory))
+            return Task.FromResult(0);
+
+        var fechaLimite = DateTime.UtcNow.AddDays(-dias);
+        int eliminados = 0;
+
+        foreach (var archivo in Directory.GetFiles(_backupDirectory, "*.bak"))
+        {
+            if (File.GetCreationTimeUtc(archivo) < fechaLimite)
+            {
+                File.Delete(archivo);
+                eliminados++;
+            }
+        }
+
+        return Task.FromResult(eliminados);
     }
 }
