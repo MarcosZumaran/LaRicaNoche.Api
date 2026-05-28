@@ -11,4 +11,5 @@ public interface IProductoService
     Task<bool> UpdateAsync(int id, ProductoUpdateDto dto);
     Task<bool> DeleteAsync(int id);
     Task<bool> AddStockAsync(int id, int cantidad);
+    Task<bool> SetImagenUrlAsync(int id, string url);
 }

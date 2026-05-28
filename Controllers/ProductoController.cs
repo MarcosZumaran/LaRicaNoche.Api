@@ -64,4 +64,38 @@ public class ProductoController : ControllerBase
             return BadRequest(new { mensaje = ex.Message });
         }
     }
+
+    /// <summary>Sube una imagen para un producto y actualiza su URL.</summary>
+    [HttpPost("{id}/imagen")]
+    public async Task<IActionResult> SubirImagen(int id, IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { mensaje = "No se recibió ninguna imagen." });
+
+        // Validar que sea una imagen
+        var extensionesPermitidas = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!extensionesPermitidas.Contains(extension))
+            return BadRequest(new { mensaje = "Formato de imagen no permitido. Use JPG, PNG, GIF o WebP." });
+
+        // Generar nombre único
+        var nombreArchivo = $"{Guid.NewGuid()}{extension}";
+        var rutaRelativa = Path.Combine("imagenes", "productos", nombreArchivo);
+        var rutaCompleta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaRelativa);
+
+        // Crear carpeta si no existe (por si acaso)
+        Directory.CreateDirectory(Path.GetDirectoryName(rutaCompleta)!);
+
+        // Guardar archivo
+        using (var stream = new FileStream(rutaCompleta, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        // Actualizar la URL en la base de datos
+        var urlRelativa = $"/{rutaRelativa.Replace(Path.DirectorySeparatorChar, '/')}";
+        await _service.SetImagenUrlAsync(id, urlRelativa);
+
+        return Ok(new { imagenUrl = urlRelativa });
+    }
 }

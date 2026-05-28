@@ -211,6 +211,13 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
     });
 }
 
+// Servir archivos estáticos desde wwwroot
+app.UseStaticFiles();
+
+// Crear carpeta de imágenes si no existe
+var imagenesPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "imagenes", "productos");
+Directory.CreateDirectory(imagenesPath);
+
 app.UseResponseCompression();
 app.UseCors();
 app.UseAuthentication();

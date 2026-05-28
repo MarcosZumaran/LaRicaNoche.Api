@@ -97,4 +97,13 @@ public class ProductoService : IProductoService
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> SetImagenUrlAsync(int id, string url)
+    {
+        var producto = await _db.Productos.FindAsync(id);
+        if (producto is null) return false;
+        producto.ImagenUrl = url;
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }
