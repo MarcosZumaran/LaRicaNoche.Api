@@ -6,6 +6,8 @@ using HotelGenericoApi.Mappings;
 using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Models;
 
+using SkiaSharp;
+
 namespace HotelGenericoApi.Services.Implementations;
 
 public class ProductoService : IProductoService
@@ -38,22 +40,30 @@ public class ProductoService : IProductoService
         return entity is not null ? MapToResponse(entity) : null;
     }
 
-    public async Task<ProductoResponseDto> CreateAsync(ProductoCreateDto dto)
+    public async Task<ProductoResponseDto> CreateAsync(ProductoCreateDto dto, IFormFile? file)
     {
         var entity = _mapper.FromCreate(dto);
         entity.CreatedAt = DateTime.UtcNow;
+
+        if (file is not null)
+            entity.ImagenUrl = await ProcesarImagenAsync(file);
+
         _db.Productos.Add(entity);
         await _db.SaveChangesAsync();
-
         await _db.Entry(entity).Reference(p => p.AfectacionIgv).LoadAsync();
         return MapToResponse(entity);
     }
 
-    public async Task<bool> UpdateAsync(int id, ProductoUpdateDto dto)
+    public async Task<bool> UpdateAsync(int id, ProductoUpdateDto dto, IFormFile? file)
     {
         var entity = await _db.Productos.FindAsync(id);
         if (entity is null) return false;
+
         _mapper.UpdateFromDto(dto, entity);
+
+        if (file is not null)
+            entity.ImagenUrl = await ProcesarImagenAsync(file);
+
         await _db.SaveChangesAsync();
         return true;
     }
@@ -83,6 +93,31 @@ public class ProductoService : IProductoService
             p.CreatedAt,
             p.ImagenUrl
         );
+    }
+
+
+    private async Task<string?> ProcesarImagenAsync(IFormFile? file)
+    {
+        if (file is null || file.Length == 0) return null;
+
+        var extensiones = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!extensiones.Contains(ext))
+            throw new InvalidOperationException("Formato de imagen no permitido.");
+
+        var nombreArchivo = $"{Guid.NewGuid()}.webp";
+        var rutaRelativa = Path.Combine("imagenes", "productos", nombreArchivo);
+        var rutaCompleta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaRelativa);
+        Directory.CreateDirectory(Path.GetDirectoryName(rutaCompleta)!);
+
+        using var stream = file.OpenReadStream();
+        using var original = SKBitmap.Decode(stream);
+        using var image = SKImage.FromBitmap(original);
+        using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
+
+        await File.WriteAllBytesAsync(rutaCompleta, data.ToArray());
+
+        return $"/{rutaRelativa.Replace(Path.DirectorySeparatorChar, '/')}";
     }
 
     public async Task<bool> AddStockAsync(int id, int cantidad)

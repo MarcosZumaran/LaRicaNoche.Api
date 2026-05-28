@@ -98,4 +98,22 @@ public class ProductoController : ControllerBase
 
         return Ok(new { imagenUrl = urlRelativa });
     }
+
+    /// <summary>Crea un producto nuevo, opcionalmente con imagen.</summary>
+    [HttpPost]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Create([FromForm] ProductoCreateDto dto, IFormFile? file)
+    {
+        var result = await _service.CreateAsync(dto, file);
+        return CreatedAtAction(nameof(GetById), new { id = result.IdProducto }, result);
+    }
+
+    /// <summary>Actualiza un producto existente, opcionalmente con nueva imagen.</summary>
+    [HttpPut("{id}")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Update(int id, [FromForm] ProductoUpdateDto dto, IFormFile? file)
+    {
+        var updated = await _service.UpdateAsync(id, dto, file);
+        return updated ? NoContent() : NotFound();
+    }
 }

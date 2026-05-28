@@ -7,8 +7,8 @@ public interface IProductoService
 {
     Task<IEnumerable<ProductoResponseDto>> GetAllAsync();
     Task<ProductoResponseDto?> GetByIdAsync(int id);
-    Task<ProductoResponseDto> CreateAsync(ProductoCreateDto dto);
-    Task<bool> UpdateAsync(int id, ProductoUpdateDto dto);
+    Task<ProductoResponseDto> CreateAsync(ProductoCreateDto dto, IFormFile? file);
+    Task<bool> UpdateAsync(int id, ProductoUpdateDto dto, IFormFile? file);
     Task<bool> DeleteAsync(int id);
     Task<bool> AddStockAsync(int id, int cantidad);
     Task<bool> SetImagenUrlAsync(int id, string url);
