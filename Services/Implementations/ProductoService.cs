@@ -6,7 +6,7 @@ using HotelGenericoApi.Mappings;
 using HotelGenericoApi.Services.Interfaces;
 using HotelGenericoApi.Models;
 
-using SkiaSharp;
+using ImageMagick;
 
 namespace HotelGenericoApi.Services.Implementations;
 
@@ -111,14 +111,23 @@ public class ProductoService : IProductoService
         Directory.CreateDirectory(Path.GetDirectoryName(rutaCompleta)!);
 
         using var stream = file.OpenReadStream();
-        using var original = SKBitmap.Decode(stream);
-        using var image = SKImage.FromBitmap(original);
-        using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
+        using var image = new MagickImage(stream);
 
-        await File.WriteAllBytesAsync(rutaCompleta, data.ToArray());
+        // Redimensionar si es más ancha de 800px
+        if (image.Width > 800)
+        {
+            var geometry = new MagickGeometry(800);
+            image.Resize(geometry);
+        }
+
+        // Guardar como WebP con calidad 80
+        image.Quality = 80;
+        image.Format = MagickFormat.WebP;
+        await image.WriteAsync(rutaCompleta);
 
         return $"/{rutaRelativa.Replace(Path.DirectorySeparatorChar, '/')}";
     }
+
 
     public async Task<bool> AddStockAsync(int id, int cantidad)
     {
