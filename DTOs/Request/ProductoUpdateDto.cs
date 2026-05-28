@@ -1,14 +1,16 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace HotelGenericoApi.DTOs.Request;
 
 public sealed record ProductoUpdateDto
 {
-    public string? CodigoSunat { get; init; }
-    public string? Nombre { get; init; }
-    public string? Descripcion { get; init; }
-    public decimal? PrecioUnitario { get; init; }
-    public string? IdAfectacionIgv { get; init; }
-    public int? Stock { get; init; }
-    public int? StockMinimo { get; init; }
-    public string? UnidadMedida { get; init; }
-    public string? ImagenUrl { get; init; }
+    [FromForm] public string? CodigoSunat { get; init; }
+    [FromForm] public string? Nombre { get; init; }
+    [FromForm] public string? Descripcion { get; init; }
+    [FromForm] public decimal? PrecioUnitario { get; init; }
+    [FromForm] public string? IdAfectacionIgv { get; init; }
+    [FromForm] public int? IdCategoria { get; init; }
+    [FromForm] public int? Stock { get; init; }
+    [FromForm] public int? StockMinimo { get; init; }
+    [FromForm] public string? UnidadMedida { get; init; }
 }
