@@ -50,7 +50,6 @@ public static class ServiceExtensions
         services.AddScoped<IConfiguracionHotelService, ConfiguracionHotelService>();
         services.AddScoped<IValidadorEstadoService, ValidadorEstadoService>();
         services.AddScoped<ICategoriaProductoService, CategoriaProductoService>();
-        services.AddScoped<IBackupService, BackupService>();
 
         // HttpClient tipificado para RENIEC
         services.AddHttpClient<IReniecService, ReniecService>();
@@ -58,6 +57,9 @@ public static class ServiceExtensions
         // Setup y transacciones
         services.AddScoped<SetupService>();
         services.AddScoped<IDbTransactionManager, SqlServerTransactionManager>();
+
+        // Backup
+        services.AddScoped<IBackupService, BackupService>();
 
         return services;
     }
